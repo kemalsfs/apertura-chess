@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useCallback } from 'react';
 import { useRepertoire } from './hooks/useRepertoire';
 import { useEvaluation } from './hooks/useEvaluation';
 import { ChessgroundBoard } from './components/Chessboard/ChessgroundBoard';
@@ -43,9 +43,12 @@ export function App() {
   // Live Stockfish Evaluation
   const evaluation = useEvaluation(currentFen, chess.turn());
 
-  const handleMove = (orig: string, dest: string) => {
-    playMove(orig, dest);
-  };
+  const handleMove = useCallback(
+    (orig: string, dest: string) => {
+      playMove(orig, dest);
+    },
+    [playMove]
+  );
 
   const lastMove: [string, string] | undefined = currentNode
     ? [currentNode.from, currentNode.to]
@@ -75,13 +78,13 @@ export function App() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* Left Column: Board + Eval Bar + Board Controls + Opening Explorer */}
                 <div className="lg:col-span-7 flex flex-col gap-4">
-                  {/* Board and Eval Bar Container */}
-                  <div className="flex items-stretch justify-center gap-3 w-full max-w-[600px] mx-auto">
+                  {/* Stable Board and Eval Bar Container (Zero Layout Shift) */}
+                  <div className="flex items-center justify-center gap-3.5 w-full max-w-[560px] mx-auto">
                     {/* Live Stockfish Eval Bar */}
                     <EvalBar evaluation={evaluation} orientation={orientation} />
 
                     {/* Chessground Board */}
-                    <div className="flex-1">
+                    <div className="flex-1 aspect-square max-w-[500px]">
                       <ChessgroundBoard
                         fen={currentFen}
                         orientation={orientation}
