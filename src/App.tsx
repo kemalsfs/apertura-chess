@@ -10,9 +10,10 @@ import { MoveTree } from './components/Repertoire/MoveTree';
 import { MoveAnnotation } from './components/Repertoire/MoveAnnotation';
 import { OpeningExplorer } from './components/Explorer/OpeningExplorer';
 import { DrillView } from './components/Drill/DrillView';
+import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { Header, type ActiveTab } from './components/Layout/Header';
 import { MobileNav } from './components/Layout/MobileNav';
-import { Sparkles, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('repertoire');
@@ -167,23 +168,7 @@ export function App() {
         )}
 
         {/* Tab 3: Game Analytics Mode */}
-        {activeTab === 'analytics' && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center max-w-xl mx-auto my-12 shadow-2xl">
-            <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-400">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <h2 className="text-lg font-bold text-zinc-100 mb-2">Lichess & Chess.com Maç Analitiği</h2>
-            <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
-              Faz 4 kapsamında inşa edilecek. Çevrimiçi maçlarınızı indirip hangi varyantta % kaç kazandığınızı gösterecek.
-            </p>
-            <button
-              onClick={() => setActiveTab('repertoire')}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold rounded-xl text-xs transition cursor-pointer"
-            >
-              Açılış Ağacına Dön
-            </button>
-          </div>
-        )}
+        {activeTab === 'analytics' && <AnalyticsView />}
       </main>
 
       {/* Promotion Modal */}

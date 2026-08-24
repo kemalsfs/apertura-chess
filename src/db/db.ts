@@ -1,18 +1,21 @@
 ﻿import Dexie, { type Table } from 'dexie';
 import type { Repertoire, RepertoireNode } from '../types/chess';
 import type { CachedExplorerItem } from '../types/explorer';
+import type { ImportedGame } from '../types/analytics';
 
 export class TheoriaChessDatabase extends Dexie {
   repertoires!: Table<Repertoire, string>;
   nodes!: Table<RepertoireNode, string>;
   explorerCache!: Table<CachedExplorerItem, string>;
+  games!: Table<ImportedGame, string>;
 
   constructor() {
     super('TheoriaChessDB');
-    this.version(2).stores({
+    this.version(3).stores({
       repertoires: 'id, name, color, isDefault, createdAt, updatedAt',
       nodes: 'id, repertoireId, normalizedFen, parentId, san, [repertoireId+normalizedFen]',
       explorerCache: 'id, fen, source, timestamp',
+      games: 'id, platform, userColor, result, eco, date, [platform+userColor]',
     });
   }
 }
