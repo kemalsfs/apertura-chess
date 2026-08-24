@@ -1,11 +1,14 @@
 ﻿import { useState } from 'react';
 import { useRepertoire } from './hooks/useRepertoire';
+import { useEvaluation } from './hooks/useEvaluation';
 import { ChessgroundBoard } from './components/Chessboard/ChessgroundBoard';
 import { BoardControls } from './components/Chessboard/BoardControls';
+import { EvalBar } from './components/Chessboard/EvalBar';
 import { PromotionModal } from './components/Chessboard/PromotionModal';
 import { RepertoireHeader } from './components/Repertoire/RepertoireHeader';
 import { MoveTree } from './components/Repertoire/MoveTree';
 import { MoveAnnotation } from './components/Repertoire/MoveAnnotation';
+import { OpeningExplorer } from './components/Explorer/OpeningExplorer';
 import { Header, type ActiveTab } from './components/Layout/Header';
 import { MobileNav } from './components/Layout/MobileNav';
 import { Sparkles, Info } from 'lucide-react';
@@ -37,6 +40,9 @@ export function App() {
     isLoading,
   } = useRepertoire();
 
+  // Live Stockfish Evaluation
+  const evaluation = useEvaluation(currentFen, chess.turn());
+
   const handleMove = (orig: string, dest: string) => {
     playMove(orig, dest);
   };
@@ -67,17 +73,27 @@ export function App() {
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left Column: Chessboard & Controls */}
-                <div className="lg:col-span-7 flex flex-col items-center">
-                  <ChessgroundBoard
-                    fen={currentFen}
-                    orientation={orientation}
-                    chess={chess}
-                    onMove={handleMove}
-                    lastMove={lastMove}
-                    shapes={currentNode?.arrows || []}
-                  />
+                {/* Left Column: Board + Eval Bar + Board Controls + Opening Explorer */}
+                <div className="lg:col-span-7 flex flex-col gap-4">
+                  {/* Board and Eval Bar Container */}
+                  <div className="flex items-stretch justify-center gap-3 w-full max-w-[600px] mx-auto">
+                    {/* Live Stockfish Eval Bar */}
+                    <EvalBar evaluation={evaluation} orientation={orientation} />
 
+                    {/* Chessground Board */}
+                    <div className="flex-1">
+                      <ChessgroundBoard
+                        fen={currentFen}
+                        orientation={orientation}
+                        chess={chess}
+                        onMove={handleMove}
+                        lastMove={lastMove}
+                        shapes={currentNode?.arrows || []}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Board Controls */}
                   <BoardControls
                     onGoToStart={goToStart}
                     onGoBack={goBack}
@@ -88,6 +104,13 @@ export function App() {
                     canGoForward={currentChildren.length > 0}
                     canDelete={currentNodeId !== null}
                     fen={currentFen}
+                  />
+
+                  {/* Opening Explorer Database */}
+                  <OpeningExplorer
+                    fen={currentFen}
+                    currentChildren={currentChildren}
+                    onPlayMove={playMove}
                   />
                 </div>
 
@@ -111,7 +134,7 @@ export function App() {
                   <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-zinc-400">
                     <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                     <div>
-                      <span className="text-zinc-200 font-medium">İpucu:</span> Tahtada yaptığınız her yasal hamle otomatik olarak bu açılış ağacına kaydedilir ve IndexedDB ile cihazınızda saklanır.
+                      <span className="text-zinc-200 font-medium">İpucu:</span> Açılış Veritabanındaki herhangi bir hamleye tıkladığınızda hamle otomatik olarak tahtada oynanır ve açılış ağacınıza eklenir.
                     </div>
                   </div>
                 </div>
