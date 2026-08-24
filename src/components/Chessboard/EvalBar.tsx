@@ -8,61 +8,86 @@ interface EvalBarProps {
 }
 
 export const EvalBar: React.FC<EvalBarProps> = ({ evaluation, orientation }) => {
-  // Convert score into percentage (0% = Black totally winning, 100% = White totally winning)
+  // Calculate White's winning probability percentage (0% = Black winning completely, 100% = White winning completely)
   let whitePercent = 50;
 
   if (evaluation.type === 'mate') {
-    whitePercent = evaluation.value > 0 ? 100 : evaluation.value < 0 ? 0 : 50;
+    if (evaluation.value > 0) {
+      whitePercent = 100;
+    } else if (evaluation.value < 0) {
+      whitePercent = 0;
+    } else {
+      whitePercent = 50;
+    }
   } else {
-    // Standard winning chance sigmoid formula
+    // Standard Lichess winning chance sigmoid curve
     const cp = Math.max(-1500, Math.min(1500, evaluation.value));
     whitePercent = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1);
-    whitePercent = Math.max(5, Math.min(95, whitePercent));
+    whitePercent = Math.max(3, Math.min(97, whitePercent));
   }
 
-  // If orientation is black, bottom of bar is Black, top is White
-  const fillPercent = orientation === 'white' ? whitePercent : 100 - whitePercent;
+  // If orientation is white: White is on bottom (height = whitePercent%), Black is on top
+  // If orientation is black: Black is on bottom (height = 100 - whitePercent%), White is on top
+  const whiteBarHeight = orientation === 'white' ? whitePercent : 100 - whitePercent;
 
   // Format display text
   let displayText = '0.0';
+
   if (evaluation.type === 'mate') {
     displayText = evaluation.value === 0 ? 'Mat' : `M${Math.abs(evaluation.value)}`;
   } else {
-    const cpInPawns = (evaluation.value / 100).toFixed(1);
-    displayText = evaluation.value > 0 ? `+${cpInPawns}` : cpInPawns === '-0.0' ? '0.0' : cpInPawns;
+    const cpInPawns = (Math.abs(evaluation.value) / 100).toFixed(1);
+    if (Math.abs(evaluation.value) < 15) {
+      displayText = '0.0';
+    } else if (evaluation.value > 0) {
+      displayText = `+${cpInPawns}`;
+    } else {
+      displayText = `-${cpInPawns}`;
+    }
   }
 
   return (
     <div className="flex flex-col items-center select-none h-full py-1">
-      {/* Eval Bar Track */}
-      <div className="relative w-7 h-full min-h-[300px] max-h-[600px] bg-zinc-950 rounded-lg overflow-hidden border border-zinc-800 shadow-inner flex flex-col justify-end">
-        {/* White Portion (bottom when white orientation, top when black) */}
+      {/* Eval Bar Track (Two-color container: Top is Black, Bottom is White) */}
+      <div className="relative w-8 h-full min-h-[320px] max-h-[600px] bg-zinc-950 rounded-xl overflow-hidden border-2 border-zinc-800 shadow-xl flex flex-col justify-end">
+        {/* Black Background Fill (Entire container is dark by default) */}
+        <div className="absolute inset-0 bg-zinc-900" />
+
+        {/* White Bar Fill */}
         <div
-          className="w-full bg-zinc-100 transition-all duration-300 ease-out"
-          style={{ height: `${fillPercent}%` }}
+          className="relative w-full bg-zinc-100 transition-all duration-300 ease-out"
+          style={{ height: `${whiteBarHeight}%` }}
         />
 
-        {/* Text Badge Over Bar */}
+        {/* Center 50% Equality Line */}
+        <div className="absolute top-1/2 left-0 right-0 h-[1.5px] bg-emerald-500/70 z-10 pointer-events-none" />
+
+        {/* High-Contrast Floating Score Pill Badge */}
         <div
-          className={`absolute left-0 right-0 py-1 text-center font-mono text-[10px] font-black transition-all duration-300 ${
-            fillPercent > 50 ? 'bottom-2 text-zinc-900' : 'top-2 text-zinc-100'
+          className={`absolute left-0.5 right-0.5 py-1 rounded-md text-center font-mono text-[10px] font-black tracking-tight shadow-md z-20 transition-all duration-300 ${
+            whiteBarHeight >= 50
+              ? 'bottom-2 bg-zinc-900/90 text-zinc-100 border border-zinc-700/60'
+              : 'top-2 bg-zinc-100/95 text-zinc-900 border border-zinc-300'
           }`}
         >
           {displayText}
         </div>
       </div>
 
-      {/* Depth & Source Tag */}
+      {/* Engine Depth & Source Badge */}
       <div className="text-[9px] font-mono text-zinc-500 mt-1.5 flex items-center gap-1">
         {evaluation.source === 'cloud' && (
-          <span className="text-emerald-400 font-bold" title="Lichess Cloud Eval (Derinlik 30-50)">
+          <span className="text-emerald-400 font-bold" title="Lichess Cloud Eval (Derinlik 30-75)">
             ☁ {evaluation.depth}
           </span>
         )}
         {evaluation.source === 'local' && (
-          <span className="text-zinc-400" title="Yerel Motor">
+          <span className="text-amber-400 font-bold" title="WebAssembly Stockfish Motoru">
             ⚡ {evaluation.depth}
           </span>
+        )}
+        {evaluation.isLoading && (
+          <span className="text-zinc-500 animate-pulse text-[8px]">...</span>
         )}
       </div>
     </div>
