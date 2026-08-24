@@ -9,6 +9,7 @@ import { RepertoireHeader } from './components/Repertoire/RepertoireHeader';
 import { MoveTree } from './components/Repertoire/MoveTree';
 import { MoveAnnotation } from './components/Repertoire/MoveAnnotation';
 import { OpeningExplorer } from './components/Explorer/OpeningExplorer';
+import { DrillView } from './components/Drill/DrillView';
 import { Header, type ActiveTab } from './components/Layout/Header';
 import { MobileNav } from './components/Layout/MobileNav';
 import { Sparkles, Info } from 'lucide-react';
@@ -40,7 +41,7 @@ export function App() {
     isLoading,
   } = useRepertoire();
 
-  // Live Stockfish Evaluation
+  // Live Stockfish Evaluation for Repertoire mode
   const evaluation = useEvaluation(currentFen, chess.turn());
 
   const handleMove = useCallback(
@@ -61,6 +62,7 @@ export function App() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+        {/* Tab 1: Repertoire Builder */}
         {activeTab === 'repertoire' && (
           <div>
             {/* Repertoire Selector */}
@@ -78,7 +80,7 @@ export function App() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* Left Column: Board + Eval Bar + Board Controls + Opening Explorer */}
                 <div className="lg:col-span-7 flex flex-col gap-4">
-                  {/* Stable Board and Eval Bar Container (Zero Layout Shift) */}
+                  {/* Stable Board and Eval Bar Container */}
                   <div className="flex items-center justify-center gap-3.5 w-full max-w-[560px] mx-auto">
                     {/* Live Stockfish Eval Bar */}
                     <EvalBar evaluation={evaluation} orientation={orientation} />
@@ -146,24 +148,17 @@ export function App() {
           </div>
         )}
 
+        {/* Tab 2: Drill & Spaced Repetition Mode */}
         {activeTab === 'drill' && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center max-w-xl mx-auto my-12 shadow-2xl">
-            <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-400">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <h2 className="text-lg font-bold text-zinc-100 mb-2">Spaced Repetition Drill Modu</h2>
-            <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
-              Faz 3 kapsamında inşa edilecek. Bilgisayar açılış ağacınızdaki rakip varyantları otomatik oynayacak ve sizden doğru hamleleri hatırlamanızı isteyecek.
-            </p>
-            <button
-              onClick={() => setActiveTab('repertoire')}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold rounded-xl text-xs transition cursor-pointer"
-            >
-              Açılış Ağacına Dön
-            </button>
-          </div>
+          <DrillView
+            repertoires={repertoires}
+            activeRepertoireId={activeRepertoireId}
+            orientation={orientation}
+            onExit={() => setActiveTab('repertoire')}
+          />
         )}
 
+        {/* Tab 3: Game Analytics Mode */}
         {activeTab === 'analytics' && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center max-w-xl mx-auto my-12 shadow-2xl">
             <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-400">
