@@ -25,11 +25,15 @@ export function App() {
     flipBoard,
     currentNode,
     currentNodeId,
+    currentStep,
+    isCurrentSaved,
     currentFen,
     chess,
     history,
     currentChildren,
     playMove,
+    saveCurrentToRepertoire,
+    clearRepertoire,
     pendingPromotion,
     completePromotion,
     goToNode,
@@ -51,8 +55,8 @@ export function App() {
     [playMove]
   );
 
-  const lastMove: [string, string] | undefined = currentNode
-    ? [currentNode.from, currentNode.to]
+  const lastMove: [string, string] | undefined = currentStep
+    ? [currentStep.from, currentStep.to]
     : undefined;
 
   return (
@@ -70,6 +74,7 @@ export function App() {
               repertoires={repertoires}
               activeId={activeRepertoireId}
               onSelect={setActiveRepertoireId}
+              onClearRepertoire={clearRepertoire}
             />
 
             {isLoading ? (
@@ -98,14 +103,17 @@ export function App() {
                     </div>
                   </div>
 
-                  {/* Board Controls */}
+                  {/* Board Controls with Repertoire Save Button */}
                   <BoardControls
                     onGoToStart={goToStart}
                     onGoBack={goBack}
                     onGoForward={goForward}
                     onFlipBoard={flipBoard}
+                    onSaveToRepertoire={saveCurrentToRepertoire}
                     onDeleteCurrentNode={currentNodeId ? () => deleteNode(currentNodeId) : undefined}
-                    canGoBack={currentNodeId !== null}
+                    isSaved={isCurrentSaved}
+                    canSave={history.length > 0}
+                    canGoBack={history.length > 0}
                     canGoForward={currentChildren.length > 0}
                     canDelete={currentNodeId !== null}
                     fen={currentFen}
@@ -139,7 +147,7 @@ export function App() {
                   <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-zinc-400">
                     <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                     <div>
-                      <span className="text-zinc-200 font-medium">İpucu:</span> Açılış Veritabanındaki herhangi bir hamleye tıkladığınızda hamle otomatik olarak tahtada oynanır ve açılış ağacınıza eklenir.
+                      <span className="text-zinc-200 font-medium">İpucu:</span> Tahtada serbestçe hamleler yapıp inceleyebilirsiniz. Beğendiğiniz varyantı kalıcı olarak eklemek için <strong className="text-emerald-400">"Repertoara Kaydet"</strong> butonuna basın.
                     </div>
                   </div>
                 </div>

@@ -4,14 +4,29 @@ import { db, initializeDatabase } from '../db/db';
 import type { Repertoire, RepertoireNode, MoveHistoryItem, RepertoireColor } from '../types/chess';
 import { STARTING_FEN, normalizeFen, isPromotionMove } from '../utils/chessHelpers';
 
+export interface BoardStep {
+  san: string;
+  uci: string;
+  from: string;
+  to: string;
+  fen: string;
+  turn: 'w' | 'b';
+  promotion?: string;
+  savedNodeId?: string;
+  comment?: string;
+}
+
 export function useRepertoire() {
   const [repertoires, setRepertoires] = useState<Repertoire[]>([]);
   const [activeRepertoireId, setActiveRepertoireId] = useState<string>('default-white');
   const [nodes, setNodes] = useState<Map<string, RepertoireNode>>(new Map());
-  const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
   const [orientation, setOrientation] = useState<RepertoireColor>('white');
   const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Active Line on Board (can contain both saved nodes and temporary unsaved exploration moves)
+  const [boardHistory, setBoardHistory] = useState<BoardStep[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1); // -1 means starting position
 
   // Initialize DB and load repertoires
   useEffect(() => {
@@ -39,10 +54,10 @@ export function useRepertoire() {
         nodeMap.set(node.id, node);
       }
       setNodes(nodeMap);
-      setCurrentNodeId(null); // Reset to start
+      setBoardHistory([]);
+      setHistoryIndex(-1);
       setIsLoading(false);
 
-      // Auto-set orientation based on repertoire color
       const rep = repertoires.find(r => r.id === activeRepertoireId);
       if (rep) {
         setOrientation(rep.color);
@@ -52,80 +67,148 @@ export function useRepertoire() {
     loadNodes();
   }, [activeRepertoireId, repertoires]);
 
-  // Current node object
+  // Current Step in the active board line
+  const currentStep = useMemo(() => {
+    if (historyIndex >= 0 && historyIndex < boardHistory.length) {
+      return boardHistory[historyIndex];
+    }
+    return null;
+  }, [boardHistory, historyIndex]);
+
+  // Current Node if current step is saved in repertoire DB
   const currentNode = useMemo(() => {
-    return currentNodeId ? nodes.get(currentNodeId) || null : null;
-  }, [currentNodeId, nodes]);
+    if (currentStep?.savedNodeId) {
+      return nodes.get(currentStep.savedNodeId) || null;
+    }
+    return null;
+  }, [currentStep, nodes]);
 
-  // Current FEN
+  // Current FEN on board
   const currentFen = useMemo(() => {
-    return currentNode ? currentNode.fen : STARTING_FEN;
-  }, [currentNode]);
+    return currentStep ? currentStep.fen : STARTING_FEN;
+  }, [currentStep]);
 
-  // Chess.js instance for current position
+  // Chess instance
   const chess = useMemo(() => {
     return new Chess(currentFen);
   }, [currentFen]);
 
-  // Lineage from root to current node (Breadcrumbs / History)
-  const history = useMemo(() => {
+  // Check if current position is already saved in Repertoire DAG
+  const isCurrentSaved = useMemo(() => {
+    if (historyIndex === -1) return true; // Starting position is always "saved"
+    return !!currentStep?.savedNodeId;
+  }, [historyIndex, currentStep]);
+
+  // Lineage history up to current index for MoveTree display
+  const history: MoveHistoryItem[] = useMemo(() => {
     const path: MoveHistoryItem[] = [];
-    let curr = currentNode;
-    while (curr) {
-      path.unshift({
-        nodeId: curr.id,
-        san: curr.san,
-        fen: curr.fen,
-        turn: curr.turn,
-        moveNumber: curr.moveNumber,
+    for (let i = 0; i <= historyIndex && i < boardHistory.length; i++) {
+      const step = boardHistory[i];
+      const moveNum = Math.floor(i / 2) + 1;
+      path.push({
+        nodeId: step.savedNodeId || `temp_${i}`,
+        san: step.san,
+        fen: step.fen,
+        turn: step.turn,
+        moveNumber: moveNum,
       });
-      curr = curr.parentId ? nodes.get(curr.parentId) || null : null;
     }
     return path;
-  }, [currentNode, nodes]);
+  }, [boardHistory, historyIndex]);
 
-  // Child nodes from current position
+  // Child candidate nodes from current position that exist in Repertoire DB
   const currentChildren = useMemo(() => {
-    if (!currentNodeId) {
-      // Root level moves (no parent)
+    if (historyIndex === -1) {
+      // Root level moves
       return Array.from(nodes.values()).filter(n => n.parentId === null);
     }
-    const node = nodes.get(currentNodeId);
+    if (!currentStep?.savedNodeId) return [];
+
+    const node = nodes.get(currentStep.savedNodeId);
     if (!node || !node.childrenIds) return [];
     return node.childrenIds
       .map(id => nodes.get(id))
       .filter((n): n is RepertoireNode => n !== undefined);
-  }, [currentNodeId, nodes]);
+  }, [historyIndex, currentStep, nodes]);
 
-  // Navigate to a specific node
-  const goToNode = useCallback((nodeId: string | null) => {
-    setCurrentNodeId(nodeId);
+  // Navigate to a specific step index or root
+  const goToStep = useCallback((index: number) => {
+    setHistoryIndex(index);
     setPendingPromotion(null);
   }, []);
 
-  // Go to root starting position
   const goToStart = useCallback(() => {
-    goToNode(null);
-  }, [goToNode]);
+    goToStep(-1);
+  }, [goToStep]);
 
-  // Go back 1 move
   const goBack = useCallback(() => {
-    if (currentNode?.parentId !== undefined) {
-      goToNode(currentNode.parentId);
+    if (historyIndex >= 0) {
+      goToStep(historyIndex - 1);
     }
-  }, [currentNode, goToNode]);
+  }, [historyIndex, goToStep]);
 
-  // Go forward to primary child
   const goForward = useCallback(() => {
-    if (currentChildren.length > 0) {
-      goToNode(currentChildren[0].id);
+    if (historyIndex + 1 < boardHistory.length) {
+      goToStep(historyIndex + 1);
+    } else if (currentChildren.length > 0) {
+      // Go to first saved child
+      const child = currentChildren[0];
+      const newStep: BoardStep = {
+        san: child.san,
+        uci: child.uci,
+        from: child.from,
+        to: child.to,
+        fen: child.fen,
+        turn: child.turn,
+        promotion: child.promotion,
+        savedNodeId: child.id,
+        comment: child.comment,
+      };
+      setBoardHistory(prev => [...prev.slice(0, historyIndex + 1), newStep]);
+      setHistoryIndex(prev => prev + 1);
     }
-  }, [currentChildren, goToNode]);
+  }, [historyIndex, boardHistory.length, currentChildren, goToStep]);
 
-  // Play a move on the board
+  // Select a saved node directly from MoveTree / Explorer
+  const goToNode = useCallback(
+    (nodeId: string | null) => {
+      if (!nodeId) {
+        goToStart();
+        return;
+      }
+
+      // If clicking a child node from current position
+      const childNode = nodes.get(nodeId);
+      if (childNode) {
+        // Build full path to this node
+        const path: BoardStep[] = [];
+        let curr: RepertoireNode | null = childNode;
+        while (curr) {
+          path.unshift({
+            san: curr.san,
+            uci: curr.uci,
+            from: curr.from,
+            to: curr.to,
+            fen: curr.fen,
+            turn: curr.turn,
+            promotion: curr.promotion,
+            savedNodeId: curr.id,
+            comment: curr.comment,
+          });
+          curr = curr.parentId ? nodes.get(curr.parentId) || null : null;
+        }
+
+        setBoardHistory(path);
+        setHistoryIndex(path.length - 1);
+        setPendingPromotion(null);
+      }
+    },
+    [nodes, goToStart]
+  );
+
+  // Play a move on the board (allows free exploration!)
   const playMove = useCallback(
-    async (from: string, to: string, promotion: string = 'q'): Promise<boolean> => {
-      // Check if it's a pawn promotion and we haven't selected a piece yet
+    (from: string, to: string, promotion: string = 'q'): boolean => {
       if (isPromotionMove(chess, from, to) && !pendingPromotion) {
         setPendingPromotion({ from, to });
         return true;
@@ -141,60 +224,27 @@ export function useRepertoire() {
         if (!moveAttempt) return false;
 
         const newFen = chess.fen();
-        const normFen = normalizeFen(newFen);
         const san = moveAttempt.san;
         const uci = `${from}${to}${promotion && promotion !== 'q' ? promotion : ''}`;
 
-        // Check if this move already exists from current position
-        const existingChild = currentChildren.find(c => c.san === san);
-        if (existingChild) {
-          setCurrentNodeId(existingChild.id);
-          setPendingPromotion(null);
-          return true;
-        }
+        // Check if this move already exists in saved children from current position
+        const existingSavedChild = currentChildren.find(c => c.san === san);
 
-        // Create new RepertoireNode
-        const moveNumber = Math.floor(chess.moveNumber());
-        const newNodeId = `${activeRepertoireId}_${Date.now()}_${san}`;
-
-        const newNode: RepertoireNode = {
-          id: newNodeId,
-          repertoireId: activeRepertoireId,
-          fen: newFen,
-          normalizedFen: normFen,
+        const newStep: BoardStep = {
           san,
           uci,
           from,
           to,
-          promotion: moveAttempt.promotion,
+          fen: newFen,
           turn: chess.turn(),
-          moveNumber,
-          parentId: currentNodeId,
-          childrenIds: [],
-          createdAt: Date.now(),
+          promotion: moveAttempt.promotion,
+          savedNodeId: existingSavedChild?.id,
+          comment: existingSavedChild?.comment,
         };
 
-        // Save to DB
-        await db.nodes.add(newNode);
-
-        // If has parent, update parent's childrenIds
-        if (currentNodeId) {
-          const parent = nodes.get(currentNodeId);
-          if (parent) {
-            const updatedChildren = [...parent.childrenIds, newNodeId];
-            await db.nodes.update(currentNodeId, { childrenIds: updatedChildren });
-            parent.childrenIds = updatedChildren;
-          }
-        }
-
-        // Update local memory map
-        setNodes(prev => {
-          const next = new Map(prev);
-          next.set(newNodeId, newNode);
-          return next;
-        });
-
-        setCurrentNodeId(newNodeId);
+        const updatedHistory = [...boardHistory.slice(0, historyIndex + 1), newStep];
+        setBoardHistory(updatedHistory);
+        setHistoryIndex(updatedHistory.length - 1);
         setPendingPromotion(null);
         return true;
       } catch (err) {
@@ -203,10 +253,67 @@ export function useRepertoire() {
         return false;
       }
     },
-    [chess, activeRepertoireId, currentNodeId, currentChildren, nodes, pendingPromotion]
+    [chess, currentChildren, boardHistory, historyIndex, pendingPromotion]
   );
 
-  // Complete promotion after user picks piece
+  // Explicitly Save Current Unsaved Line to Permanent Repertoire DAG
+  const saveCurrentToRepertoire = useCallback(async () => {
+    if (historyIndex < 0) return;
+
+    let parentId: string | null = null;
+    const updatedNodes = new Map(nodes);
+    const updatedHistory = [...boardHistory];
+
+    for (let i = 0; i <= historyIndex; i++) {
+      const step = updatedHistory[i];
+
+      if (step.savedNodeId && updatedNodes.has(step.savedNodeId)) {
+        parentId = step.savedNodeId;
+      } else {
+        // Create new RepertoireNode in DB
+        const normFen = normalizeFen(step.fen);
+        const newNodeId = `${activeRepertoireId}_${Date.now()}_${step.san}_${i}`;
+
+        const newNode: RepertoireNode = {
+          id: newNodeId,
+          repertoireId: activeRepertoireId,
+          fen: step.fen,
+          normalizedFen: normFen,
+          san: step.san,
+          uci: step.uci,
+          from: step.from,
+          to: step.to,
+          promotion: step.promotion,
+          turn: step.turn,
+          moveNumber: Math.floor(i / 2) + 1,
+          parentId,
+          childrenIds: [],
+          createdAt: Date.now(),
+        };
+
+        await db.nodes.add(newNode);
+
+        // Update parent's childrenIds
+        if (parentId) {
+          const parent = updatedNodes.get(parentId);
+          if (parent && !parent.childrenIds.includes(newNodeId)) {
+            const newChildren = [...parent.childrenIds, newNodeId];
+            await db.nodes.update(parentId, { childrenIds: newChildren });
+            parent.childrenIds = newChildren;
+          }
+        }
+
+        updatedNodes.set(newNodeId, newNode);
+        step.savedNodeId = newNodeId;
+        parentId = newNodeId;
+      }
+    }
+
+    setNodes(updatedNodes);
+    setBoardHistory(updatedHistory);
+  }, [historyIndex, boardHistory, nodes, activeRepertoireId]);
+
+  // Complete promotion after piece pick
   const completePromotion = useCallback(
     (pieceType: string) => {
       if (pendingPromotion) {
@@ -216,30 +323,34 @@ export function useRepertoire() {
     [pendingPromotion, playMove]
   );
 
-  // Save comment for current node
+  // Save comment for current step
   const saveComment = useCallback(
     async (comment: string) => {
-      if (!currentNodeId) return;
-      await db.nodes.update(currentNodeId, { comment });
-      setNodes(prev => {
-        const next = new Map(prev);
-        const node = next.get(currentNodeId);
-        if (node) {
-          next.set(currentNodeId, { ...node, comment });
-        }
-        return next;
-      });
+      if (currentStep?.savedNodeId) {
+        await db.nodes.update(currentStep.savedNodeId, { comment });
+        setNodes(prev => {
+          const next = new Map(prev);
+          const n = next.get(currentStep.savedNodeId!);
+          if (n) next.set(currentStep.savedNodeId!, { ...n, comment });
+          return next;
+        });
+      }
+
+      // Update local step
+      if (currentStep) {
+        currentStep.comment = comment;
+        setBoardHistory([...boardHistory]);
+      }
     },
-    [currentNodeId]
+    [currentStep, boardHistory]
   );
 
-  // Delete a node and its descendants
+  // Delete node from repertoire
   const deleteNode = useCallback(
     async (nodeId: string) => {
       const nodeToDelete = nodes.get(nodeId);
       if (!nodeToDelete) return;
 
-      // Collect all descendant IDs
       const toDelete: string[] = [];
       function collectDescendants(id: string) {
         toDelete.push(id);
@@ -252,10 +363,8 @@ export function useRepertoire() {
       }
       collectDescendants(nodeId);
 
-      // Remove from DB
       await db.nodes.bulkDelete(toDelete);
 
-      // Remove from parent's childrenIds
       if (nodeToDelete.parentId) {
         const parent = nodes.get(nodeToDelete.parentId);
         if (parent) {
@@ -264,22 +373,25 @@ export function useRepertoire() {
         }
       }
 
-      // Update state
       setNodes(prev => {
         const next = new Map(prev);
-        for (const id of toDelete) {
-          next.delete(id);
-        }
+        for (const id of toDelete) next.delete(id);
         return next;
       });
 
-      // Reset to parent
-      setCurrentNodeId(nodeToDelete.parentId);
+      goToStart();
     },
-    [nodes]
+    [nodes, goToStart]
   );
 
-  // Toggle Board Orientation
+  // Clear all moves in active repertoire
+  const clearRepertoire = useCallback(async () => {
+    await db.nodes.where('repertoireId').equals(activeRepertoireId).delete();
+    setNodes(new Map());
+    setBoardHistory([]);
+    setHistoryIndex(-1);
+  }, [activeRepertoireId]);
+
   const flipBoard = useCallback(() => {
     setOrientation(prev => (prev === 'white' ? 'black' : 'white'));
   }, []);
@@ -292,14 +404,19 @@ export function useRepertoire() {
     setOrientation,
     flipBoard,
     currentNode,
-    currentNodeId,
+    currentNodeId: currentStep?.savedNodeId || null,
+    currentStep,
+    isCurrentSaved,
     currentFen,
     chess,
     history,
     currentChildren,
     playMove,
+    saveCurrentToRepertoire,
+    clearRepertoire,
     pendingPromotion,
     completePromotion,
+    goToStep,
     goToNode,
     goToStart,
     goBack,
