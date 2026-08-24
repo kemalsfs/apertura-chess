@@ -8,22 +8,26 @@ interface EvalBarProps {
 }
 
 export const EvalBar: React.FC<EvalBarProps> = ({ evaluation, orientation }) => {
-  // Calculate White's winning probability percentage (0% = Black winning completely, 100% = White winning completely)
+  // Calculate White's advantage percentage on standard 0–100 scale (50% = equal)
   let whitePercent = 50;
 
   if (evaluation.type === 'mate') {
     if (evaluation.value > 0) {
-      whitePercent = 100;
+      whitePercent = 98;
     } else if (evaluation.value < 0) {
-      whitePercent = 0;
+      whitePercent = 2;
     } else {
       whitePercent = 50;
     }
   } else {
-    // Standard Lichess winning chance sigmoid curve
-    const cp = Math.max(-1500, Math.min(1500, evaluation.value));
+    // Smooth Lichess winning chance sigmoid curve:
+    // cp = 0 -> 50%
+    // cp = +100 (+1 pawn) -> ~58%
+    // cp = +300 (+3 pawns) -> ~73%
+    // cp = +500 (+5 pawns) -> ~84%
+    const cp = Math.max(-1200, Math.min(1200, evaluation.value));
     whitePercent = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1);
-    whitePercent = Math.max(3, Math.min(97, whitePercent));
+    whitePercent = Math.max(4, Math.min(96, whitePercent));
   }
 
   // If orientation is white: White is on bottom (height = whitePercent%), Black is on top
@@ -46,28 +50,34 @@ export const EvalBar: React.FC<EvalBarProps> = ({ evaluation, orientation }) => 
     }
   }
 
+  // Determine pill badge position & style
+  const isWhiteDominant = whiteBarHeight >= 50;
+
   return (
     <div className="flex flex-col items-center select-none h-full py-1">
-      {/* Eval Bar Track (Two-color container: Top is Black, Bottom is White) */}
-      <div className="relative w-8 h-full min-h-[320px] max-h-[600px] bg-zinc-950 rounded-xl overflow-hidden border-2 border-zinc-800 shadow-xl flex flex-col justify-end">
-        {/* Black Background Fill (Entire container is dark by default) */}
-        <div className="absolute inset-0 bg-zinc-900" />
+      {/* Eval Bar Track: Solid two-tone container */}
+      <div className="relative w-8 h-full min-h-[320px] max-h-[600px] bg-zinc-900 rounded-xl overflow-hidden border-2 border-zinc-700 shadow-xl flex flex-col justify-end">
+        {/* Top Half: Solid Black side */}
+        <div className="absolute inset-0 bg-[#121214]" />
 
-        {/* White Bar Fill */}
+        {/* Bottom Half: Solid White side (dynamically advances up or recedes down) */}
         <div
-          className="relative w-full bg-zinc-100 transition-all duration-300 ease-out"
-          style={{ height: `${whiteBarHeight}%` }}
+          className="relative w-full bg-[#f4f4f6]"
+          style={{
+            height: `${whiteBarHeight}%`,
+            transition: 'height 600ms cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
         />
 
-        {/* Center 50% Equality Line */}
-        <div className="absolute top-1/2 left-0 right-0 h-[1.5px] bg-emerald-500/70 z-10 pointer-events-none" />
+        {/* Center 50% Equality Baseline */}
+        <div className="absolute top-1/2 left-0 right-0 h-[1.5px] bg-emerald-500/80 z-10 pointer-events-none shadow-xs" />
 
-        {/* High-Contrast Floating Score Pill Badge */}
+        {/* Floating High-Contrast Score Badge */}
         <div
-          className={`absolute left-0.5 right-0.5 py-1 rounded-md text-center font-mono text-[10px] font-black tracking-tight shadow-md z-20 transition-all duration-300 ${
-            whiteBarHeight >= 50
-              ? 'bottom-2 bg-zinc-900/90 text-zinc-100 border border-zinc-700/60'
-              : 'top-2 bg-zinc-100/95 text-zinc-900 border border-zinc-300'
+          className={`absolute left-0.5 right-0.5 py-1 rounded-md text-center font-mono text-[10px] font-black tracking-tight shadow-lg z-20 transition-all duration-500 ease-out ${
+            isWhiteDominant
+              ? 'bottom-2 bg-zinc-950/90 text-zinc-100 border border-zinc-700'
+              : 'top-2 bg-white/95 text-zinc-950 border border-zinc-300'
           }`}
         >
           {displayText}

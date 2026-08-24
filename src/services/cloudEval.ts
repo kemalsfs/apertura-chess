@@ -4,7 +4,7 @@ const cloudEvalCache = new Map<string, EvaluationResult>();
 
 export async function fetchCloudEval(
   fen: string,
-  turn: 'w' | 'b',
+  _turn: 'w' | 'b',
   signal?: AbortSignal
 ): Promise<EvaluationResult | null> {
   if (cloudEvalCache.has(fen)) {
@@ -32,24 +32,20 @@ export async function fetchCloudEval(
 
     let evalResult: EvaluationResult;
 
+    // NOTE: Lichess Cloud Eval API already provides scores from White perspective.
     if (pv.mate !== undefined) {
-      // Mate in N
-      // Lichess gives mate from active player perspective. Convert to White perspective:
-      const mateVal = turn === 'b' ? -pv.mate : pv.mate;
       evalResult = {
         type: 'mate',
-        value: mateVal,
+        value: pv.mate,
         depth,
         bestMove,
         source: 'cloud',
         isLoading: false,
       };
     } else if (pv.cp !== undefined) {
-      // Centipawns (100 cp = 1 pawn)
-      const cpVal = turn === 'b' ? -pv.cp : pv.cp;
       evalResult = {
         type: 'cp',
-        value: cpVal,
+        value: pv.cp,
         depth,
         bestMove,
         source: 'cloud',
