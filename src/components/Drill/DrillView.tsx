@@ -7,7 +7,7 @@ import { DrillHeader } from './DrillHeader';
 import { DrillFeedback } from './DrillFeedback';
 import { DrillSummaryModal } from './DrillSummaryModal';
 import type { Repertoire, RepertoireColor } from '../../types/chess';
-import { Layers, ArrowRight } from 'lucide-react';
+import { Layers, ArrowRight, RotateCcw } from 'lucide-react';
 
 interface DrillViewProps {
   repertoires: Repertoire[];
@@ -34,6 +34,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
     isSessionFinished,
     isLoading,
     playUserMove,
+    retryCurrentLine,
     advanceToNextLine,
     restartSession,
   } = useDrillSession(activeRepertoireId, orientation);
@@ -67,7 +68,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
         </div>
         <h2 className="text-lg font-bold text-zinc-100 mb-2">Repertoarda Hamle Bulunamadı</h2>
         <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
-          Drill antrenmanı yapabilmek için önce Açılış Ağacı sekmesinden tahta üzerinde varyantlar oluşturmalısın.
+          Drill antrenmanı yapabilmek için önce Açılış Ağacı sekmesinden tahta üzerinde varyantlar oluşturup kaydetmelisin.
         </p>
         <button
           onClick={onExit}
@@ -115,14 +116,21 @@ export const DrillView: React.FC<DrillViewProps> = ({
 
         {/* Right Column: Feedback, Comments, and Controls */}
         <div className="lg:col-span-5 flex flex-col gap-4">
-          <DrillFeedback feedback={feedback} />
+          <DrillFeedback feedback={feedback} onRetryLine={retryCurrentLine} />
 
-          {/* Manual Skip / Next Line Button if user gets stuck */}
+          {/* Action Bar: Restart Line or Skip */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between shadow-sm">
-            <span className="text-xs text-zinc-400">Bu varyantı geçmek ister misin?</span>
+            <button
+              onClick={retryCurrentLine}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-semibold transition cursor-pointer border border-zinc-700"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Varyantı Baştan Al</span>
+            </button>
+
             <button
               onClick={advanceToNextLine}
-              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-semibold transition cursor-pointer"
+              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-medium transition cursor-pointer"
             >
               Sonraki Varyant
             </button>

@@ -31,7 +31,7 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
     status: 'your_turn',
     message: 'Antrenman Hazırlanıyor...',
   });
-  const [stats, setStats] = useState<DrStats>({
+  const [stats, setStats] = useState<DrillStats>({
     totalAnswers: 0,
     correctAnswers: 0,
     streak: 0,
@@ -73,8 +73,6 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
   }, [currentFen]);
 
   // Check if current step is User's move or Opponent's move
-  // If orientation === 'white': Even steps (0, 2, 4...) are White (User), Odd steps (1, 3...) are Black (Opponent)
-  // If orientation === 'black': Even steps (0, 2, 4...) are White (Opponent), Odd steps (1, 3...) are Black (User)
   const isUserTurn = useMemo(() => {
     if (!activeLine || stepIndex >= activeLine.length) return false;
     const isStepWhite = stepIndex % 2 === 0;
@@ -111,9 +109,12 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
 
       return () => clearTimeout(timer);
     } else {
-      setFeedback({
-        status: 'your_turn',
-        message: 'Sıra Sende: Repertoarındaki doğru hamleyi oyna',
+      setFeedback(prev => {
+        if (prev.status === 'wrong') return prev; // Keep wrong feedback visible until retry
+        return {
+          status: 'your_turn',
+          message: 'Sıra Sende: Repertoarındaki doğru hamleyi oyna',
+        };
       });
     }
   }, [isUserTurn, activeLine, stepIndex, isLoading, isSessionFinished, lines.length]);
@@ -139,6 +140,18 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
       });
     }
   }, [lineIndex, lines.length]);
+
+  // Retry/Rewind Current Line to Beginning
+  const retryCurrentLine = useCallback(() => {
+    setStepIndex(0);
+    setCurrentFen(STARTING_FEN);
+    setLastMove(undefined);
+    setArrows([]);
+    setFeedback({
+      status: 'your_turn',
+      message: 'Varyant baştan başladı: Doğru hamleyi oyna',
+    });
+  }, []);
 
   // Handle User Move Attempt
   const playUserMove = useCallback(
@@ -281,14 +294,8 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
     isSessionFinished,
     isLoading,
     playUserMove,
+    retryCurrentLine,
     advanceToNextLine,
     restartSession,
   };
-}
-
-interface DrStats {
-  totalAnswers: number;
-  correctAnswers: number;
-  streak: number;
-  maxStreak: number;
 }

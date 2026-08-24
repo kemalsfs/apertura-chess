@@ -1,12 +1,13 @@
 ﻿import React from 'react';
 import type { DrillFeedback as DrillFeedbackType } from '../../hooks/useDrillSession';
-import { CheckCircle2, XCircle, Sparkles, MessageSquare, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Sparkles, MessageSquare, Loader2, RotateCcw } from 'lucide-react';
 
 interface DrillFeedbackProps {
   feedback: DrillFeedbackType;
+  onRetryLine?: () => void;
 }
 
-export const DrillFeedback: React.FC<DrillFeedbackProps> = ({ feedback }) => {
+export const DrillFeedback: React.FC<DrillFeedbackProps> = ({ feedback, onRetryLine }) => {
   return (
     <div className="flex flex-col gap-2.5 w-full">
       {/* Main Feedback Banner */}
@@ -42,6 +43,17 @@ export const DrillFeedback: React.FC<DrillFeedbackProps> = ({ feedback }) => {
 
           <span className="text-xs font-semibold">{feedback.message}</span>
         </div>
+
+        {/* Retry Button when wrong */}
+        {feedback.status === 'wrong' && onRetryLine && (
+          <button
+            onClick={onRetryLine}
+            className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-xs transition cursor-pointer shadow-sm ml-2 shrink-0 animate-pulse"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Baştan Dene</span>
+          </button>
+        )}
       </div>
 
       {/* Move Explanation / Comment Card (if any) */}
