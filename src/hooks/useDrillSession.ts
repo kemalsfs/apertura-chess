@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Chess } from 'chess.js';
 import { db } from '../db/db';
 import type { RepertoireNode, RepertoireColor, DrawShape } from '../types/chess';
@@ -40,7 +40,104 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
   const [isSessionFinished, setIsSessionFinished] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load repertoire and extract all training lines
+  // Timer ref to prevent memory leaks or overlapping auto-moves
+  const autoMoveTimerRef = useRef<any>(null);
+
+  const activeLine = useMemo(() => {
+    return lines[lineIndex] || [];
+  }, [lines, lineIndex]);
+
+  const chess = useMemo(() => {
+    return new Chess(currentFen);
+  }, [currentFen]);
+
+  // Is it user's turn to play
+  const isUserTurn = useMemo(() => {
+    if (!activeLine || stepIndex >= activeLine.length) return false;
+    const isStepWhite = stepIndex % 2 === 0;
+    return orientation === 'white' ? isStepWhite : !isStepWhite;
+  }, [activeLine, stepIndex, orientation]);
+
+  // Start / Init a specific line according to user orientation pedagogy
+  const setupLine = useCallback(
+    (line: RepertoireNode[]) => {
+      if (autoMoveTimerRef.current) {
+        clearTimeout(autoMoveTimerRef.current);
+      }
+
+      if (!line || line.length === 0) return;
+
+      if (orientation === 'white') {
+        // WHITE REPERTOIRE:
+        // Automatically play White's 1st move (ply 0), and let Opponent play Black's 1st move (ply 1).
+        // Then prompt user starting from White's 2nd move (ply 2).
+        if (line.length >= 2) {
+          const whiteFirstNode = line[0];
+          const blackFirstNode = line[1];
+
+          // 1. Instantly set White's first move
+          setCurrentFen(whiteFirstNode.fen);
+          setLastMove([whiteFirstNode.from, whiteFirstNode.to]);
+          setArrows([]);
+          setFeedback({
+            status: 'opponent_turn',
+            message: `1. ${whiteFirstNode.san} oynandı. Rakip yanıt veriyor...`,
+          });
+
+          // 2. Play Black's reply with slight realistic delay
+          autoMoveTimerRef.current = setTimeout(() => {
+            soundEffects.playMove();
+            setCurrentFen(blackFirstNode.fen);
+            setLastMove([blackFirstNode.from, blackFirstNode.to]);
+            setStepIndex(2);
+            setFeedback({
+              status: 'your_turn',
+              message: `Rakip ${blackFirstNode.san} oynadı. 2. hamleni yap!`,
+            });
+          }, 600);
+        } else if (line.length === 1) {
+          // Only 1 move in line
+          const whiteFirstNode = line[0];
+          setCurrentFen(STARTING_FEN);
+          setLastMove(undefined);
+          setArrows([]);
+          setStepIndex(0);
+          setFeedback({
+            status: 'your_turn',
+            message: `İlk hamleni oyna: ${whiteFirstNode.san}`,
+          });
+        }
+      } else {
+        // BLACK REPERTOIRE:
+        // Automatically play Opponent's (White's) 1st move (ply 0).
+        // Then prompt user for Black's 1st move (ply 1).
+        if (line.length >= 1) {
+          const whiteFirstNode = line[0];
+          setCurrentFen(STARTING_FEN);
+          setLastMove(undefined);
+          setArrows([]);
+          setFeedback({
+            status: 'opponent_turn',
+            message: 'Beyaz (Rakip) ilk hamlesini yapıyor...',
+          });
+
+          autoMoveTimerRef.current = setTimeout(() => {
+            soundEffects.playMove();
+            setCurrentFen(whiteFirstNode.fen);
+            setLastMove([whiteFirstNode.from, whiteFirstNode.to]);
+            setStepIndex(1);
+            setFeedback({
+              status: 'your_turn',
+              message: `Beyaz ${whiteFirstNode.san} oynadı. Siyah ile cevabını ver!`,
+            });
+          }, 400);
+        }
+      }
+    },
+    [orientation]
+  );
+
+  // Load Repertoire and Start
   useEffect(() => {
     async function loadRepertoire() {
       setIsLoading(true);
@@ -53,33 +150,22 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
       const allLines = extractRepertoireLines(nodeMap);
       setLines(allLines);
       setLineIndex(0);
-      setStepIndex(0);
-      setCurrentFen(STARTING_FEN);
-      setLastMove(undefined);
-      setArrows([]);
       setIsSessionFinished(allLines.length === 0);
       setIsLoading(false);
+
+      if (allLines.length > 0) {
+        setupLine(allLines[0]);
+      }
     }
 
     loadRepertoire();
-  }, [activeRepertoireId]);
 
-  const activeLine = useMemo(() => {
-    return lines[lineIndex] || [];
-  }, [lines, lineIndex]);
+    return () => {
+      if (autoMoveTimerRef.current) clearTimeout(autoMoveTimerRef.current);
+    };
+  }, [activeRepertoireId, setupLine]);
 
-  const chess = useMemo(() => {
-    return new Chess(currentFen);
-  }, [currentFen]);
-
-  // Check if current step is User's move or Opponent's move
-  const isUserTurn = useMemo(() => {
-    if (!activeLine || stepIndex >= activeLine.length) return false;
-    const isStepWhite = stepIndex % 2 === 0;
-    return orientation === 'white' ? isStepWhite : !isStepWhite;
-  }, [activeLine, stepIndex, orientation]);
-
-  // Handle Opponent Auto-Move
+  // Handle Subsequent Opponent Auto-Moves (Beyond ply 1)
   useEffect(() => {
     if (isLoading || isSessionFinished || lines.length === 0) return;
     if (stepIndex >= activeLine.length) return;
@@ -91,7 +177,7 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
       });
 
       const opponentMoveNode = activeLine[stepIndex];
-      const timer = setTimeout(() => {
+      autoMoveTimerRef.current = setTimeout(() => {
         try {
           soundEffects.playMove();
           setCurrentFen(opponentMoveNode.fen);
@@ -100,37 +186,25 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
           setStepIndex(prev => prev + 1);
           setFeedback({
             status: 'your_turn',
-            message: 'Sıra Sende: Repertuvarındaki doğru hamleyi oyna',
+            message: `Rakip ${opponentMoveNode.san} oynadı. Sıra sende!`,
           });
         } catch (err) {
           console.error('Error auto-playing opponent move:', err);
         }
       }, 500);
 
-      return () => clearTimeout(timer);
-    } else {
-      setFeedback(prev => {
-        if (prev.status === 'wrong') return prev; // Keep wrong feedback visible until retry
-        return {
-          status: 'your_turn',
-          message: 'Sıra Sende: Repertuvarındaki doğru hamleyi oyna',
-        };
-      });
+      return () => {
+        if (autoMoveTimerRef.current) clearTimeout(autoMoveTimerRef.current);
+      };
     }
   }, [isUserTurn, activeLine, stepIndex, isLoading, isSessionFinished, lines.length]);
 
-  // Advance to next training line
+  // Advance to Next Line
   const advanceToNextLine = useCallback(() => {
     if (lineIndex + 1 < lines.length) {
-      setLineIndex(prev => prev + 1);
-      setStepIndex(0);
-      setCurrentFen(STARTING_FEN);
-      setLastMove(undefined);
-      setArrows([]);
-      setFeedback({
-        status: 'your_turn',
-        message: 'Yeni varyant başlıyor...',
-      });
+      const nextIdx = lineIndex + 1;
+      setLineIndex(nextIdx);
+      setupLine(lines[nextIdx]);
     } else {
       setIsSessionFinished(true);
       soundEffects.playComplete();
@@ -139,19 +213,14 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
         message: '🎉 Tebrikler! Tüm antrenman serisini tamamladın.',
       });
     }
-  }, [lineIndex, lines.length]);
+  }, [lineIndex, lines, setupLine]);
 
-  // Retry/Rewind Current Line to Beginning
+  // Retry / Rewind Current Line
   const retryCurrentLine = useCallback(() => {
-    setStepIndex(0);
-    setCurrentFen(STARTING_FEN);
-    setLastMove(undefined);
-    setArrows([]);
-    setFeedback({
-      status: 'your_turn',
-      message: 'Varyant baştan başladı: Doğru hamleyi oyna',
-    });
-  }, []);
+    if (activeLine && activeLine.length > 0) {
+      setupLine(activeLine);
+    }
+  }, [activeLine, setupLine]);
 
   // Handle User Move Attempt
   const playUserMove = useCallback(
@@ -266,10 +335,6 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
   // Restart entire drill session
   const restartSession = useCallback(() => {
     setLineIndex(0);
-    setStepIndex(0);
-    setCurrentFen(STARTING_FEN);
-    setLastMove(undefined);
-    setArrows([]);
     setStats({
       totalAnswers: 0,
       correctAnswers: 0,
@@ -277,7 +342,10 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
       maxStreak: 0,
     });
     setIsSessionFinished(false);
-  }, []);
+    if (lines.length > 0) {
+      setupLine(lines[0]);
+    }
+  }, [lines, setupLine]);
 
   return {
     lines,
