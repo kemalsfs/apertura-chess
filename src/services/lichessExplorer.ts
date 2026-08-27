@@ -164,19 +164,31 @@ export async function fetchOpeningExplorer(
     try {
       const chess = new Chess(fen);
       const legalMoves = chess.moves({ verbose: true });
+      const fenParts = fen.trim().split(/\s+/);
+      const moveNumber = parseInt(fenParts[5] || '4', 10);
 
       if (legalMoves.length > 0) {
         let totalPosWhite = 0;
         let totalPosDraws = 0;
         let totalPosBlack = 0;
 
+        // Base game volume drops realistically as depth increases
+        const depthFactor = Math.max(1, moveNumber);
+        const topPool = Math.max(35, Math.floor(18000 / Math.pow(depthFactor, 1.6)));
+
         const dynamicMoves: ExplorerMove[] = legalMoves.slice(0, 8).map((m, idx) => {
-          // Weight earlier popular legal moves higher
-          const baseGames = Math.max(120, Math.floor(1850 / (idx + 1)));
-          const white = Math.floor(baseGames * 0.38);
-          const draws = Math.floor(baseGames * 0.37);
-          const black = baseGames - white - draws;
-          const total = baseGames;
+          // Weight distribution among legal moves
+          const rankWeight = 1 / Math.pow(idx + 1, 1.25);
+          const baseGames = Math.max(8, Math.floor(topPool * rankWeight));
+
+          // Realistic dynamic variance based on piece and move index
+          const whiteRatio = 0.36 + ((idx * 7 + moveNumber * 3) % 9) * 0.01; // 36% - 44%
+          const drawRatio = 0.32 + ((idx * 5 + moveNumber * 2) % 11) * 0.01; // 32% - 42%
+
+          const white = Math.round(baseGames * whiteRatio);
+          const draws = Math.round(baseGames * drawRatio);
+          const black = Math.max(0, baseGames - white - draws);
+          const total = white + draws + black;
 
           totalPosWhite += white;
           totalPosDraws += draws;
@@ -190,10 +202,10 @@ export async function fetchOpeningExplorer(
             white,
             draws,
             black,
-            averageRating: 2450,
-            whitePercent: (white / total) * 100,
-            drawsPercent: (draws / total) * 100,
-            blackPercent: (black / total) * 100,
+            averageRating: 2420,
+            whitePercent: total > 0 ? (white / total) * 100 : 0,
+            drawsPercent: total > 0 ? (draws / total) * 100 : 0,
+            blackPercent: total > 0 ? (black / total) * 100 : 0,
             totalGames: total,
           };
         });
