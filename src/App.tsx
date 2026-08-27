@@ -9,7 +9,6 @@ import { PromotionModal } from './components/Chessboard/PromotionModal';
 import { RepertoireHeader } from './components/Repertoire/RepertoireHeader';
 import { MoveTree } from './components/Repertoire/MoveTree';
 import { MoveAnnotation } from './components/Repertoire/MoveAnnotation';
-import { OpeningExplorer } from './components/Explorer/OpeningExplorer';
 import { DrillView } from './components/Drill/DrillView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { HubView } from './components/Hub/HubView';
@@ -139,14 +138,6 @@ export function App() {
                     canGoForward={currentChildren.length > 0}
                     canDelete={currentNodeId !== null}
                     fen={currentFen}
-                  />
-
-                  {/* Opening Explorer Database */}
-                  <OpeningExplorer
-                    fen={currentFen}
-                    currentChildren={currentChildren}
-                    evaluation={evaluation}
-                    onPlayMove={playMove}
                   />
                 </div>
 
