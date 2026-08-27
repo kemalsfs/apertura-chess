@@ -13,11 +13,16 @@ export function useTheme() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, themeId);
-    document.documentElement.style.setProperty('--bg-base', theme.bgBase);
-    document.documentElement.style.setProperty('--bg-surface', theme.bgSurface);
-    document.documentElement.style.setProperty('--bg-card', theme.bgCard);
-    document.documentElement.style.setProperty('--accent-color', theme.accent);
-    document.documentElement.style.setProperty('--accent-hover', theme.accentHover);
+
+    // Apply class to html and body
+    document.documentElement.className = `theme-${themeId}`;
+    document.body.className = `theme-${themeId}`;
+
+    document.documentElement.style.setProperty('--theme-bg-base', theme.bgBase);
+    document.documentElement.style.setProperty('--theme-bg-surface', theme.bgSurface);
+    document.documentElement.style.setProperty('--theme-bg-card', theme.bgCard);
+    document.documentElement.style.setProperty('--theme-accent', theme.accent);
+    document.documentElement.style.setProperty('--theme-accent-hover', theme.accentHover);
   }, [themeId, theme]);
 
   return {

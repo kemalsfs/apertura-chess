@@ -1,4 +1,4 @@
-﻿import type { EvaluationResult } from '../types/explorer';
+﻿import type { EvaluationResult, EngineMoveOption } from '../types/explorer';
 
 const cloudEvalCache = new Map<string, EvaluationResult>();
 
@@ -12,11 +12,10 @@ export async function fetchCloudEval(
   }
 
   try {
-    const url = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=1`;
+    const url = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=3`;
     const response = await fetch(url, { signal });
 
     if (!response.ok) {
-      // 404 means not in cloud database
       return null;
     }
 
@@ -25,41 +24,56 @@ export async function fetchCloudEval(
       return null;
     }
 
-    const pv = data.pvs[0];
     const depth = data.depth || 30;
-    const moves = pv.moves ? pv.moves.split(' ') : [];
-    const bestMove = moves[0] || undefined;
+    const topMoves: EngineMoveOption[] = [];
 
-    let evalResult: EvaluationResult;
+    data.pvs.forEach((pv: any, index: number) => {
+      const moves = pv.moves ? pv.moves.split(' ') : [];
+      const uciMove = moves[0];
+      if (!uciMove) return;
 
-    // NOTE: Lichess Cloud Eval API already provides scores from White perspective.
-    if (pv.mate !== undefined) {
-      evalResult = {
-        type: 'mate',
-        value: pv.mate,
+      const from = uciMove.slice(0, 2);
+      const to = uciMove.slice(2, 4);
+
+      let scoreType: 'cp' | 'mate' = 'cp';
+      let scoreValue = 0;
+
+      if (pv.mate !== undefined) {
+        scoreType = 'mate';
+        scoreValue = pv.mate;
+      } else if (pv.cp !== undefined) {
+        scoreType = 'cp';
+        scoreValue = pv.cp;
+      }
+
+      topMoves.push({
+        uci: uciMove,
+        from,
+        to,
+        type: scoreType,
+        value: scoreValue,
         depth,
-        bestMove,
-        source: 'cloud',
-        isLoading: false,
-      };
-    } else if (pv.cp !== undefined) {
-      evalResult = {
-        type: 'cp',
-        value: pv.cp,
-        depth,
-        bestMove,
-        source: 'cloud',
-        isLoading: false,
-      };
-    } else {
-      return null;
-    }
+        rank: index + 1,
+      });
+    });
+
+    const bestOption = topMoves[0];
+    if (!bestOption) return null;
+
+    const evalResult: EvaluationResult = {
+      type: bestOption.type,
+      value: bestOption.value,
+      depth,
+      bestMove: bestOption.uci,
+      topMoves,
+      source: 'cloud',
+      isLoading: false,
+    };
 
     cloudEvalCache.set(fen, evalResult);
     return evalResult;
   } catch (err: any) {
     if (err.name === 'AbortError') return null;
-    console.warn('Cloud eval fetch error:', err);
     return null;
   }
 }

@@ -31,7 +31,6 @@ export function useEvaluation(fen: string, turn: 'w' | 'b') {
                 to: m.to,
                 promotion: m.uci.length > 4 ? m.uci[4] : undefined,
               });
-              // Undo temp move
               tempChess.undo();
               return {
                 ...m,
@@ -53,14 +52,17 @@ export function useEvaluation(fen: string, turn: 'w' | 'b') {
     };
 
     async function runEval() {
-      // 1. Try instant Lichess Cloud Eval (depth 30-75)
+      // 1. Try instant Lichess Cloud Eval (multiPv=3)
       try {
         const cloudResult = await fetchCloudEval(fen, turn, controller.signal);
         if (isCancelled) return;
 
-        if (cloudResult) {
+        if (cloudResult && cloudResult.topMoves && cloudResult.topMoves.length >= 3) {
           setEvaluation(enrichWithSan(cloudResult));
           return;
+        } else if (cloudResult) {
+          // If cloud eval gave only 1 move, set it quickly while local engine calculates full 3 moves
+          setEvaluation(enrichWithSan(cloudResult));
         }
       } catch (err) {
         // Continue to local engine
@@ -68,7 +70,7 @@ export function useEvaluation(fen: string, turn: 'w' | 'b') {
 
       if (isCancelled) return;
 
-      // 2. Fallback to local Stockfish Web Worker with MultiPV=3
+      // 2. Local Stockfish Web Worker with MultiPV=3
       stockfishEngine.evaluate(fen, turn, (localResult) => {
         if (!isCancelled) {
           setEvaluation(enrichWithSan(localResult));
@@ -76,7 +78,7 @@ export function useEvaluation(fen: string, turn: 'w' | 'b') {
       });
     }
 
-    const timer = setTimeout(runEval, 80);
+    const timer = setTimeout(runEval, 60);
 
     return () => {
       isCancelled = true;
