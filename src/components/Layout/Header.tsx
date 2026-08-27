@@ -31,7 +31,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 px-4 py-3 sticky top-0 z-40">
+    <header className="bg-black/10 dark:bg-black/30 backdrop-blur-xl border-b border-black/5 dark:border-white/5 px-4 py-3 sticky top-0 z-40 transition-colors">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Brand */}
         <div

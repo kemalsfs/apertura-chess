@@ -3,44 +3,71 @@
 @import "chessground/assets/chessground.cburnett.css";
 
 /* =========================================================
-   DEFAULT VARIABLES (Color Hunt Theme Engine)
-   ========================================================= */
-
-:root {
-  --theme-bg-base: #0f172a;
-  --theme-bg-surface: #1e293b;
-  --theme-bg-card: #27354a;
-  --theme-text-primary: #f8fafc;
-  --theme-text-secondary: #94a3b8;
-  --theme-accent: #f59e0b;
-  --theme-accent-hover: #d97706;
-  --theme-accent-text: #0f172a;
-  --board-dark: #3b536f;
-  --board-light: #dce7f3;
-}
-
-/* =========================================================
-   BODY AND ATMOSPHERE
+   ATMOSPHERIC LIGHTING & THEME DEPTH ENGINE
    ========================================================= */
 
 body {
   margin: 0;
-  background-color: var(--theme-bg-base);
   color: var(--theme-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  transition: background 0.35s ease, color 0.25s ease;
+}
+
+/* 1. ESPRESSO & CREAM: Sıcak Viyana Satranç Kafe Lambası */
+body.theme-colorhunt-espresso {
+  background: 
+    radial-gradient(ellipse at 50% 20%, #f7f1e6 0%, #ece2d0 45%, #d9cbba 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* 2. NORDIC SLATE & ICE: Ferah İskandinav Salonu Loş Gün Işığı */
+body.theme-colorhunt-nordic {
+  background: 
+    radial-gradient(ellipse at 50% 20%, #eff4f8 0%, #e0e7ee 45%, #c8d3df 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* 3. SAND & TERRACOTTA: Sıcak Akdeniz Güneşi ve Toprak */
+body.theme-colorhunt-terracotta {
+  background: 
+    radial-gradient(ellipse at 50% 20%, #f6ede0 0%, #ebdccb 45%, #d3bea8 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* 4. MATCHA & FOREST: Doğal Loş Orman & Ahşap Işığı */
+body.theme-colorhunt-matcha {
+  background: 
+    radial-gradient(ellipse at 50% 15%, #1d3326 0%, #131f18 55%, #090e0b 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* 5. MIDNIGHT INDIGO: Lüks Turnuva Salonu Spot Lambası */
+body.theme-colorhunt-midnight {
+  background: 
+    radial-gradient(ellipse at 50% 15%, #1e2d4a 0%, #0e172a 55%, #050811 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* 6. CHARCOAL & PLATINUM: Klasik Büyükusta Odak Masası */
+body.theme-colorhunt-monochrome {
+  background: 
+    radial-gradient(ellipse at 50% 15%, #252529 0%, #151518 55%, #0a0a0c 100%) !important;
+  background-attachment: fixed !important;
 }
 
 /* =========================================================
-   MATHEMATICAL 8x8 CHECKERBOARD (Clean Matte Color Hunt Squares)
+   PERFECT 8x8 CHECKERBOARD (Matte Satranç Tahtası Dokusu)
    ========================================================= */
 
 .cg-wrap {
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.35);
+  box-shadow: 
+    0 16px 40px -10px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: box-shadow 0.3s ease;
 }
 
 .cg-wrap cg-board {
@@ -56,14 +83,14 @@ body {
 }
 
 .cg-wrap piece {
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
 }
 
 /* =========================================================
-   THEME ADAPTATION OVERRIDES
+   AÇIK & KOYU TEMALARDA KART DERİNLİKLERİ
    ========================================================= */
 
-/* Light Theme Mode */
+/* Açık Temalar (Gözü Dinlendiren Yarı Saydam Kartlar & Sıcak Gölge) */
 .theme-light {
   color-scheme: light;
 }
@@ -86,38 +113,48 @@ body {
 
 .theme-light .bg-zinc-900,
 .theme-light .bg-zinc-950 {
-  background-color: var(--theme-bg-card) !important;
-  border-color: rgba(0, 0, 0, 0.1) !important;
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(12px) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.05) !important;
 }
 
 .theme-light .border-zinc-800,
 .theme-light .border-zinc-700 {
-  border-color: rgba(0, 0, 0, 0.12) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
 }
 
 .theme-light .bg-zinc-800 {
-  background-color: var(--theme-bg-surface) !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
   color: var(--theme-text-primary) !important;
 }
 
-/* Dark Theme Mode */
+/* Koyu Temalar (Derinlikli Yarı Saydam Kartlar & İnce Işık Çerçevesi) */
 .theme-dark {
   color-scheme: dark;
 }
 
 .theme-dark .bg-zinc-900,
 .theme-dark .bg-zinc-950 {
-  background-color: var(--theme-bg-surface) !important;
+  background-color: rgba(20, 26, 40, 0.55) !important;
+  backdrop-filter: blur(12px) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.theme-dark .border-zinc-800,
+.theme-dark .border-zinc-700 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .theme-dark .bg-zinc-800 {
-  background-color: var(--theme-bg-card) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -125,8 +162,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--theme-text-secondary);
-  opacity: 0.25;
+  background: rgba(120, 120, 120, 0.25);
   border-radius: 4px;
 }
 
