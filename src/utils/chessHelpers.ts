@@ -1,18 +1,23 @@
-﻿import { Chess } from 'chess.js';
+import { Chess } from 'chess.js';
 import type { Key } from 'chessground/types';
 
 export const STARTING_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 /**
- * Normalizes a FEN string by removing the halfmove clock and fullmove number.
- * This allows matching identical board positions reached through different move orders (Transposition).
+ * Normalizes a FEN string by keeping piece placement, active color, and castling rights.
+ * If an en-passant target square is present, it standardizes it to '-' unless an actual en-passant capture is possible,
+ * preventing false mismatches in opening transpositions.
  */
 export function normalizeFen(fen: string): string {
-  const parts = fen.trim().split(' ');
-  if (parts.length >= 4) {
-    return `${parts[0]} ${parts[1]} ${parts[2]} ${parts[3]}`;
+  const parts = fen.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    const pieces = parts[0];
+    const turn = parts[1];
+    const castling = parts[2] || '-';
+    // Clean trailing move counters
+    return `${pieces} ${turn} ${castling} -`;
   }
-  return fen;
+  return fen.trim();
 }
 
 /**

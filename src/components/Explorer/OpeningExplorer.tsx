@@ -27,6 +27,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
 
     setIsLoading(true);
     setError(null);
+    setData(null);
 
     async function loadExplorer() {
       try {
