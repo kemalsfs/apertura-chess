@@ -1,5 +1,19 @@
 ﻿import type { RepertoireNode, SRSData } from '../types/chess';
 
+export type DrillFilterType = 'due' | 'weak' | 'stale' | 'all';
+
+export interface LineMetadata {
+  id: string;
+  name: string;
+  movesText: string;
+  lastReviewed: number | null;
+  reviewsCount: number;
+  successRate: number; // 0 to 100
+  isDue: boolean;
+  status: 'new' | 'learning' | 'review' | 'mastered';
+  length: number;
+}
+
 export function calculateNextSRS(currentSrs: SRSData | undefined, isCorrect: boolean): SRSData {
   const defaultEase = 2.5;
 
@@ -69,4 +83,106 @@ export function extractRepertoireLines(nodes: Map<string, RepertoireNode>): Repe
   }
 
   return lines;
+}
+
+/**
+ * Derives comprehensive metadata for a specific training line.
+ */
+export function getLineMetadata(line: RepertoireNode[]): LineMetadata {
+  if (!line || line.length === 0) {
+    return {
+      id: 'empty',
+      name: 'Boş Varyant',
+      movesText: '',
+      lastReviewed: null,
+      reviewsCount: 0,
+      successRate: 100,
+      isDue: true,
+      status: 'new',
+      length: 0,
+    };
+  }
+
+  const lastNode = line[line.length - 1];
+  const movesText = line.map((n, idx) => {
+    const moveNum = Math.floor(idx / 2) + 1;
+    if (idx % 2 === 0) {
+      return `${moveNum}. ${n.san}`;
+    }
+    return n.san;
+  }).join(' ');
+
+  // Calculate average / most recent SRS across nodes
+  const nodesWithSrs = line.filter(n => n.srs && n.srs.reviewsCount > 0);
+  const totalReviews = nodesWithSrs.reduce((acc, n) => acc + (n.srs?.reviewsCount || 0), 0);
+  const lastReviewedTimestamps = nodesWithSrs
+    .map(n => n.srs?.lastReviewed || 0)
+    .filter(t => t > 0);
+
+  const lastReviewed = lastReviewedTimestamps.length > 0
+    ? Math.max(...lastReviewedTimestamps)
+    : null;
+
+  const now = Date.now();
+  const isDue = line.some(n => !n.srs || !n.srs.dueDate || n.srs.dueDate <= now);
+
+  const maxStreak = Math.max(0, ...line.map(n => n.srs?.streak || 0));
+
+  let status: 'new' | 'learning' | 'review' | 'mastered' = 'new';
+  if (totalReviews === 0) status = 'new';
+  else if (maxStreak >= 5) status = 'mastered';
+  else if (maxStreak >= 2) status = 'review';
+  else status = 'learning';
+
+  const successRate = status === 'mastered' ? 95 : status === 'review' ? 80 : status === 'learning' ? 60 : 100;
+
+  return {
+    id: lastNode.id,
+    name: line[0]?.san ? `${line[0].san} Varyantı` : 'Açılış Varyantı',
+    movesText,
+    lastReviewed,
+    reviewsCount: totalReviews,
+    successRate,
+    isDue,
+    status,
+    length: line.length,
+  };
+}
+
+/**
+ * Filters repertoire lines based on Spaced Repetition / user criteria.
+ */
+export function filterRepertoireLines(
+  lines: RepertoireNode[][],
+  filter: DrillFilterType
+): RepertoireNode[][] {
+  const now = Date.now();
+  const threeDaysAgo = now - 3 * 24 * 60 * 60 * 1000;
+
+  switch (filter) {
+    case 'due':
+      // Due today or not yet studied
+      return lines.filter(line => {
+        const meta = getLineMetadata(line);
+        return meta.isDue || meta.lastReviewed === null;
+      });
+
+    case 'weak':
+      // Success rate < 70% or in learning status
+      return lines.filter(line => {
+        const meta = getLineMetadata(line);
+        return meta.status === 'learning' || meta.successRate < 70;
+      });
+
+    case 'stale':
+      // Not reviewed in last 3 days
+      return lines.filter(line => {
+        const meta = getLineMetadata(line);
+        return meta.lastReviewed === null || meta.lastReviewed <= threeDaysAgo;
+      });
+
+    case 'all':
+    default:
+      return lines;
+  }
 }

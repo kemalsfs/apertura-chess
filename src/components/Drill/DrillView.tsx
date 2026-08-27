@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDrillSession } from '../../hooks/useDrillSession';
 import { useEvaluation } from '../../hooks/useEvaluation';
 import { ChessgroundBoard } from '../Chessboard/ChessgroundBoard';
@@ -6,6 +6,7 @@ import { EvalBar } from '../Chessboard/EvalBar';
 import { DrillHeader } from './DrillHeader';
 import { DrillFeedback } from './DrillFeedback';
 import { DrillSummaryModal } from './DrillSummaryModal';
+import { DrillVariantManagerModal } from './DrillVariantManagerModal';
 import type { Repertoire, RepertoireColor } from '../../types/chess';
 import { Layers, ArrowRight, RotateCcw } from 'lucide-react';
 
@@ -22,7 +23,10 @@ export const DrillView: React.FC<DrillViewProps> = ({
   orientation,
   onExit,
 }) => {
+  const [isVariantManagerOpen, setIsVariantManagerOpen] = useState(false);
+
   const {
+    allExtractedLines,
     lines,
     lineIndex,
     currentFen,
@@ -31,12 +35,14 @@ export const DrillView: React.FC<DrillViewProps> = ({
     arrows,
     feedback,
     stats,
+    filter,
     isSessionFinished,
     isLoading,
     playUserMove,
     retryCurrentLine,
     advanceToNextLine,
     restartSession,
+    changeFilter,
   } = useDrillSession(activeRepertoireId, orientation);
 
   const evaluation = useEvaluation(currentFen, chess.turn());
@@ -60,7 +66,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
   }
 
   // If no lines recorded in this repertoire
-  if (lines.length === 0) {
+  if (lines.length === 0 && allExtractedLines.length === 0) {
     return (
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center max-w-md mx-auto my-12 shadow-2xl">
         <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-amber-400">
@@ -89,8 +95,10 @@ export const DrillView: React.FC<DrillViewProps> = ({
         currentLineIndex={lineIndex}
         totalLines={lines.length}
         stats={stats}
+        currentFilter={filter}
         onExit={onExit}
         onRestart={restartSession}
+        onOpenVariantManager={() => setIsVariantManagerOpen(true)}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -129,7 +137,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
             </button>
 
             <button
-              onClick={advanceToNextLine}
+              onClick={() => advanceToNextLine(false)}
               className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-medium transition cursor-pointer"
             >
               Sonraki Varyant
@@ -137,6 +145,15 @@ export const DrillView: React.FC<DrillViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Variant Manager Filter Modal */}
+      <DrillVariantManagerModal
+        isOpen={isVariantManagerOpen}
+        allLines={allExtractedLines}
+        currentFilter={filter}
+        onSelectFilter={changeFilter}
+        onClose={() => setIsVariantManagerOpen(false)}
+      />
 
       {/* End of Session Summary Modal */}
       <DrillSummaryModal

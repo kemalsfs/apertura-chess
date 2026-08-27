@@ -1,14 +1,17 @@
-﻿import React from 'react';
+import React from 'react';
 import type { DrillStats } from '../../hooks/useDrillSession';
-import { ArrowLeft, Flame, Target, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Flame, Target, RotateCcw, SlidersHorizontal, Sparkles } from 'lucide-react';
+import type { DrillFilterType } from '../../services/srsScheduler';
 
 interface DrillHeaderProps {
   repertoireName: string;
   currentLineIndex: number;
   totalLines: number;
   stats: DrillStats;
+  currentFilter: DrillFilterType;
   onExit: () => void;
   onRestart: () => void;
+  onOpenVariantManager: () => void;
 }
 
 export const DrillHeader: React.FC<DrillHeaderProps> = ({
@@ -16,8 +19,10 @@ export const DrillHeader: React.FC<DrillHeaderProps> = ({
   currentLineIndex,
   totalLines,
   stats,
+  currentFilter,
   onExit,
   onRestart,
+  onOpenVariantManager,
 }) => {
   const accuracy =
     stats.totalAnswers > 0
@@ -26,6 +31,13 @@ export const DrillHeader: React.FC<DrillHeaderProps> = ({
 
   const progressPercent =
     totalLines > 0 ? Math.round(((currentLineIndex + 1) / totalLines) * 100) : 0;
+
+  const filterLabels: Record<DrillFilterType, string> = {
+    due: '🔥 Günün Tekrarı',
+    weak: '⚠️ Zayıf Varyantlar',
+    stale: '⏳ 3+ Günlükler',
+    all: '📚 Tüm Varyantlar',
+  };
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 mb-4 shadow-md flex flex-col gap-2.5">
@@ -45,11 +57,26 @@ export const DrillHeader: React.FC<DrillHeaderProps> = ({
             <span className="text-xs text-zinc-500 font-mono">
               (Varyant {totalLines > 0 ? currentLineIndex + 1 : 0} / {totalLines})
             </span>
+            {/* Round Badge */}
+            <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              Tur {stats.currentRound}
+            </span>
           </div>
         </div>
 
-        {/* Stats: Streak & Accuracy */}
-        <div className="flex items-center gap-3">
+        {/* Stats: Streak & Filter Manager Button */}
+        <div className="flex items-center gap-2.5">
+          {/* Variant Manager Filter Button */}
+          <button
+            onClick={onOpenVariantManager}
+            className="flex items-center gap-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 px-2.5 py-1 rounded-lg font-medium transition cursor-pointer"
+            title="Varyant Yönetimi & Filtre"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">{filterLabels[currentFilter]}</span>
+          </button>
+
           <div className="flex items-center gap-1 text-xs bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg text-amber-400 font-bold">
             <Flame className="w-4 h-4 text-amber-400 fill-amber-400" />
             <span>{stats.streak} Seri</span>

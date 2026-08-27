@@ -3,14 +3,20 @@ import { Chess } from 'chess.js';
 import { db } from '../db/db';
 import type { RepertoireNode, RepertoireColor, DrawShape } from '../types/chess';
 import { STARTING_FEN } from '../utils/chessHelpers';
-import { extractRepertoireLines, calculateNextSRS } from '../services/srsScheduler';
+import { 
+  extractRepertoireLines, 
+  calculateNextSRS, 
+  filterRepertoireLines,
+  type DrillFilterType 
+} from '../services/srsScheduler';
 import { soundEffects } from '../services/soundEffects';
 
 export interface DrillFeedback {
-  status: 'your_turn' | 'opponent_turn' | 'correct' | 'wrong' | 'complete';
+  status: 'your_turn' | 'opponent_turn' | 'correct' | 'wrong' | 'hint' | 'round_transition' | 'complete';
   message: string;
   comment?: string;
   expectedSan?: string;
+  attemptsLeft?: number;
 }
 
 export interface DrillStats {
@@ -18,12 +24,26 @@ export interface DrillStats {
   correctAnswers: number;
   streak: number;
   maxStreak: number;
+  currentRound: number;
+  roundTotalLines: number;
+  roundPassedLines: number;
 }
 
-export function useDrillSession(activeRepertoireId: string, orientation: RepertoireColor) {
+export function useDrillSession(
+  activeRepertoireId: string, 
+  orientation: RepertoireColor,
+  initialFilter: DrillFilterType = 'due'
+) {
+  const [allExtractedLines, setAllExtractedLines] = useState<RepertoireNode[][]>([]);
+  const [filter, setFilter] = useState<DrillFilterType>(initialFilter);
   const [lines, setLines] = useState<RepertoireNode[][]>([]);
   const [lineIndex, setLineIndex] = useState<number>(0);
   const [stepIndex, setStepIndex] = useState<number>(0);
+  const [attemptsOnCurrentStep, setAttemptsOnCurrentStep] = useState<number>(0);
+  const [hasFailedCurrentLine, setHasFailedCurrentLine] = useState<boolean>(false);
+  const [failedLinesInRound, setFailedLinesInRound] = useState<RepertoireNode[][]>([]);
+  const [currentRound, setCurrentRound] = useState<number>(1);
+
   const [currentFen, setCurrentFen] = useState<string>(STARTING_FEN);
   const [lastMove, setLastMove] = useState<[string, string] | undefined>(undefined);
   const [arrows, setArrows] = useState<DrawShape[]>([]);
@@ -36,11 +56,13 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
     correctAnswers: 0,
     streak: 0,
     maxStreak: 0,
+    currentRound: 1,
+    roundTotalLines: 0,
+    roundPassedLines: 0,
   });
   const [isSessionFinished, setIsSessionFinished] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Timer ref to prevent memory leaks or overlapping auto-moves
   const autoMoveTimerRef = useRef<any>(null);
 
   const activeLine = useMemo(() => {
@@ -51,14 +73,14 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
     return new Chess(currentFen);
   }, [currentFen]);
 
-  // Is it user's turn to play
+  // Is it user's turn
   const isUserTurn = useMemo(() => {
     if (!activeLine || stepIndex >= activeLine.length) return false;
     const isStepWhite = stepIndex % 2 === 0;
     return orientation === 'white' ? isStepWhite : !isStepWhite;
   }, [activeLine, stepIndex, orientation]);
 
-  // Start / Init a specific line according to user orientation pedagogy
+  // Setup specific training line
   const setupLine = useCallback(
     (line: RepertoireNode[]) => {
       if (autoMoveTimerRef.current) {
@@ -66,16 +88,17 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
       }
 
       if (!line || line.length === 0) return;
+      setAttemptsOnCurrentStep(0);
+      setHasFailedCurrentLine(false);
 
       if (orientation === 'white') {
         // WHITE REPERTOIRE:
-        // Automatically play White's 1st move (ply 0), and let Opponent play Black's 1st move (ply 1).
-        // Then prompt user starting from White's 2nd move (ply 2).
+        // Automatically play White's 1st move (ply 0), Opponent plays Black's 1st move (ply 1).
+        // User starts at ply 2.
         if (line.length >= 2) {
           const whiteFirstNode = line[0];
           const blackFirstNode = line[1];
 
-          // 1. Instantly set White's first move
           setCurrentFen(whiteFirstNode.fen);
           setLastMove([whiteFirstNode.from, whiteFirstNode.to]);
           setArrows([]);
@@ -84,7 +107,6 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
             message: `1. ${whiteFirstNode.san} oynandı. Rakip yanıt veriyor...`,
           });
 
-          // 2. Play Black's reply with slight realistic delay
           autoMoveTimerRef.current = setTimeout(() => {
             soundEffects.playMove();
             setCurrentFen(blackFirstNode.fen);
@@ -93,10 +115,10 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
             setFeedback({
               status: 'your_turn',
               message: `Rakip ${blackFirstNode.san} oynadı. 2. hamleni yap!`,
+              attemptsLeft: 3,
             });
-          }, 600);
+          }, 500);
         } else if (line.length === 1) {
-          // Only 1 move in line
           const whiteFirstNode = line[0];
           setCurrentFen(STARTING_FEN);
           setLastMove(undefined);
@@ -105,12 +127,12 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
           setFeedback({
             status: 'your_turn',
             message: `İlk hamleni oyna: ${whiteFirstNode.san}`,
+            attemptsLeft: 3,
           });
         }
       } else {
         // BLACK REPERTOIRE:
-        // Automatically play Opponent's (White's) 1st move (ply 0).
-        // Then prompt user for Black's 1st move (ply 1).
+        // Opponent plays White's 1st move (ply 0). User answers with Black's 1st move (ply 1).
         if (line.length >= 1) {
           const whiteFirstNode = line[0];
           setCurrentFen(STARTING_FEN);
@@ -129,6 +151,7 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
             setFeedback({
               status: 'your_turn',
               message: `Beyaz ${whiteFirstNode.san} oynadı. Siyah ile cevabını ver!`,
+              attemptsLeft: 3,
             });
           }, 400);
         }
@@ -137,7 +160,7 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
     [orientation]
   );
 
-  // Load Repertoire and Start
+  // Load Repertoire and apply filter
   useEffect(() => {
     async function loadRepertoire() {
       setIsLoading(true);
@@ -148,13 +171,29 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
       }
 
       const allLines = extractRepertoireLines(nodeMap);
-      setLines(allLines);
+      setAllExtractedLines(allLines);
+
+      // Apply initial filter (fallback to all if due is empty)
+      let activeLines = filterRepertoireLines(allLines, filter);
+      if (activeLines.length === 0 && allLines.length > 0) {
+        activeLines = allLines;
+      }
+
+      setLines(activeLines);
       setLineIndex(0);
-      setIsSessionFinished(allLines.length === 0);
+      setCurrentRound(1);
+      setFailedLinesInRound([]);
+      setStats(prev => ({
+        ...prev,
+        currentRound: 1,
+        roundTotalLines: activeLines.length,
+        roundPassedLines: 0,
+      }));
+      setIsSessionFinished(activeLines.length === 0);
       setIsLoading(false);
 
-      if (allLines.length > 0) {
-        setupLine(allLines[0]);
+      if (activeLines.length > 0) {
+        setupLine(activeLines[0]);
       }
     }
 
@@ -163,9 +202,9 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
     return () => {
       if (autoMoveTimerRef.current) clearTimeout(autoMoveTimerRef.current);
     };
-  }, [activeRepertoireId, setupLine]);
+  }, [activeRepertoireId, filter, setupLine]);
 
-  // Handle Subsequent Opponent Auto-Moves (Beyond ply 1)
+  // Handle subsequent opponent auto-moves beyond ply 1
   useEffect(() => {
     if (isLoading || isSessionFinished || lines.length === 0) return;
     if (stepIndex >= activeLine.length) return;
@@ -183,10 +222,12 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
           setCurrentFen(opponentMoveNode.fen);
           setLastMove([opponentMoveNode.from, opponentMoveNode.to]);
           setArrows([]);
+          setAttemptsOnCurrentStep(0);
           setStepIndex(prev => prev + 1);
           setFeedback({
             status: 'your_turn',
             message: `Rakip ${opponentMoveNode.san} oynadı. Sıra sende!`,
+            attemptsLeft: 3,
           });
         } catch (err) {
           console.error('Error auto-playing opponent move:', err);
@@ -199,37 +240,82 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
     }
   }, [isUserTurn, activeLine, stepIndex, isLoading, isSessionFinished, lines.length]);
 
-  // Advance to Next Line
-  const advanceToNextLine = useCallback(() => {
-    if (lineIndex + 1 < lines.length) {
-      const nextIdx = lineIndex + 1;
-      setLineIndex(nextIdx);
-      setupLine(lines[nextIdx]);
-    } else {
-      setIsSessionFinished(true);
-      soundEffects.playComplete();
-      setFeedback({
-        status: 'complete',
-        message: '🎉 Tebrikler! Tüm antrenman serisini tamamladın.',
-      });
-    }
-  }, [lineIndex, lines, setupLine]);
+  // Advance to next line or trigger Next Round
+  const advanceToNextLine = useCallback(
+    (wasCurrentLineClean: boolean = true) => {
+      // Record if failed
+      let updatedFailedLines = [...failedLinesInRound];
+      if (!wasCurrentLineClean || hasFailedCurrentLine) {
+        if (!updatedFailedLines.some(l => l === activeLine)) {
+          updatedFailedLines.push(activeLine);
+          setFailedLinesInRound(updatedFailedLines);
+        }
+      } else {
+        setStats(prev => ({
+          ...prev,
+          roundPassedLines: prev.roundPassedLines + 1,
+        }));
+      }
+
+      if (lineIndex + 1 < lines.length) {
+        // Next line in current round
+        const nextIdx = lineIndex + 1;
+        setLineIndex(nextIdx);
+        setupLine(lines[nextIdx]);
+      } else {
+        // End of round reached!
+        if (updatedFailedLines.length > 0) {
+          // Trigger next round with failed lines
+          const nextRoundNum = currentRound + 1;
+          setCurrentRound(nextRoundNum);
+          setLines(updatedFailedLines);
+          setLineIndex(0);
+          setFailedLinesInRound([]);
+          setStats(prev => ({
+            ...prev,
+            currentRound: nextRoundNum,
+            roundTotalLines: updatedFailedLines.length,
+            roundPassedLines: 0,
+          }));
+
+          soundEffects.playMove();
+          setFeedback({
+            status: 'round_transition',
+            message: `🔥 ${nextRoundNum}. Tur Başlıyor: Hata yaptığın ${updatedFailedLines.length} varyantı pekiştirelim!`,
+          });
+
+          setTimeout(() => {
+            setupLine(updatedFailedLines[0]);
+          }, 1500);
+        } else {
+          // All lines completed flawlessly!
+          setIsSessionFinished(true);
+          soundEffects.playComplete();
+          setFeedback({
+            status: 'complete',
+            message: `🎉 Tebrikler! ${currentRound} turda tüm varyantları eksiksiz pekiştirdin.`,
+          });
+        }
+      }
+    },
+    [lineIndex, lines, activeLine, failedLinesInRound, hasFailedCurrentLine, currentRound, setupLine]
+  );
 
   // Retry / Rewind Current Line
   const retryCurrentLine = useCallback(() => {
     if (activeLine && activeLine.length > 0) {
+      setHasFailedCurrentLine(true);
       setupLine(activeLine);
     }
   }, [activeLine, setupLine]);
 
-  // Handle User Move Attempt
+  // Handle User Move Attempt with 3-Stage Progressive Hint System
   const playUserMove = useCallback(
     async (from: string, to: string, promotion?: string): Promise<boolean> => {
       if (!isUserTurn || stepIndex >= activeLine.length) return false;
 
       const expectedNode = activeLine[stepIndex];
 
-      // Validate on chess.js
       try {
         const moveAttempt = chess.move({
           from,
@@ -241,9 +327,10 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
 
         const playedSan = moveAttempt.san;
 
-        // Check if move matches expected SAN
         if (playedSan === expectedNode.san) {
-          // --- CORRECT MOVE ---
+          // ===================================
+          // CORRECT MOVE
+          // ===================================
           soundEffects.playCorrect();
 
           // Update SRS in DB
@@ -254,6 +341,7 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
           setStats(prev => {
             const nextStreak = prev.streak + 1;
             return {
+              ...prev,
               totalAnswers: prev.totalAnswers + 1,
               correctAnswers: prev.correctAnswers + 1,
               streak: nextStreak,
@@ -264,6 +352,7 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
           setCurrentFen(expectedNode.fen);
           setLastMove([from, to]);
           setArrows([]);
+          setAttemptsOnCurrentStep(0);
 
           // Check if line complete
           if (stepIndex + 1 >= activeLine.length) {
@@ -274,9 +363,8 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
               comment: expectedNode.comment,
             });
 
-            // Automatically proceed to next line after 1.2s
             setTimeout(() => {
-              advanceToNextLine();
+              advanceToNextLine(!hasFailedCurrentLine);
             }, 1200);
           } else {
             setFeedback({
@@ -289,65 +377,120 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
 
           return true;
         } else {
-          // --- WRONG MOVE ---
+          // ===================================
+          // WRONG MOVE: Progressive Hint System
+          // ===================================
           soundEffects.playMistake();
+          setHasFailedCurrentLine(true);
+
+          const nextAttempt = attemptsOnCurrentStep + 1;
+          setAttemptsOnCurrentStep(nextAttempt);
 
           // Update SRS in DB (Failed)
           const newSrs = calculateNextSRS(expectedNode.srs, false);
           await db.nodes.update(expectedNode.id, { srs: newSrs });
 
-          // Reset Stats streak
           setStats(prev => ({
             ...prev,
             totalAnswers: prev.totalAnswers + 1,
             streak: 0,
           }));
 
-          // Show green arrow for expected move
-          setArrows([
-            {
-              orig: expectedNode.from,
-              dest: expectedNode.to,
-              brush: 'green',
-            },
-          ]);
+          if (nextAttempt === 1) {
+            // Stage 1: 1st Mistake -> Undo move on board, allow retry (2 attempts left)
+            setArrows([]);
+            setFeedback({
+              status: 'wrong',
+              message: '❌ Yanlış hamle! Tekrar dene. (2 hakkın kaldı)',
+              attemptsLeft: 2,
+            });
+            return false;
+          } else if (nextAttempt === 2) {
+            // Stage 2: 2nd Mistake -> Highlight piece origin square with glowing yellow brush (1 attempt left)
+            setArrows([
+              {
+                orig: expectedNode.from,
+                brush: 'yellow',
+              },
+            ]);
+            setFeedback({
+              status: 'hint',
+              message: '⚠️ İpucu: Sarı ile parıldayan taşı oynamalısın! (1 hakkın kaldı)',
+              attemptsLeft: 1,
+            });
+            return false;
+          } else {
+            // Stage 3: 3rd Mistake -> Reveal correct move with green arrow, play it automatically, queue for next round
+            setArrows([
+              {
+                orig: expectedNode.from,
+                dest: expectedNode.to,
+                brush: 'green',
+              },
+            ]);
 
-          setFeedback({
-            status: 'wrong',
-            message: `Hata! Doğru hamle: ${expectedNode.san}`,
-            expectedSan: expectedNode.san,
-            comment: expectedNode.comment,
-          });
+            setFeedback({
+              status: 'wrong',
+              message: `❌ 3. Hata! Doğru hamle: ${expectedNode.san}`,
+              expectedSan: expectedNode.san,
+              comment: expectedNode.comment,
+              attemptsLeft: 0,
+            });
 
-          // Re-queue this line to retry at the end of the session
-          setLines(prev => [...prev, activeLine]);
+            // Automatically play expected move after 1s and advance
+            setTimeout(() => {
+              setCurrentFen(expectedNode.fen);
+              setLastMove([expectedNode.from, expectedNode.to]);
+              setTimeout(() => {
+                advanceToNextLine(false);
+              }, 1200);
+            }, 800);
 
-          return false;
+            return false;
+          }
         }
       } catch (err) {
         console.error('Invalid move attempt in drill:', err);
         return false;
       }
     },
-    [isUserTurn, stepIndex, activeLine, chess, advanceToNextLine]
+    [isUserTurn, stepIndex, activeLine, chess, attemptsOnCurrentStep, hasFailedCurrentLine, advanceToNextLine]
   );
 
-  // Restart entire drill session
+  // Restart entire session
   const restartSession = useCallback(() => {
+    let activeLines = filterRepertoireLines(allExtractedLines, filter);
+    if (activeLines.length === 0) activeLines = allExtractedLines;
+
+    setLines(activeLines);
     setLineIndex(0);
+    setCurrentRound(1);
+    setFailedLinesInRound([]);
     setStats({
       totalAnswers: 0,
       correctAnswers: 0,
       streak: 0,
       maxStreak: 0,
+      currentRound: 1,
+      roundTotalLines: activeLines.length,
+      roundPassedLines: 0,
     });
     setIsSessionFinished(false);
-    if (lines.length > 0) {
-      setupLine(lines[0]);
+    if (activeLines.length > 0) {
+      setupLine(activeLines[0]);
     }
-  }, [lines, setupLine]);
+  }, [allExtractedLines, filter, setupLine]);
+
+  // Apply a new custom filter
+  const changeFilter = useCallback(
+    (newFilter: DrillFilterType) => {
+      setFilter(newFilter);
+    },
+    []
+  );
 
   return {
+    allExtractedLines,
     lines,
     lineIndex,
     stepIndex,
@@ -358,6 +501,7 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
     arrows,
     feedback,
     stats,
+    filter,
     isUserTurn,
     isSessionFinished,
     isLoading,
@@ -365,5 +509,6 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
     retryCurrentLine,
     advanceToNextLine,
     restartSession,
+    changeFilter,
   };
 }
