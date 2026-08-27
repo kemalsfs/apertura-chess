@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../../db/db';
 import type { ImportedGame } from '../../types/analytics';
 import type { RepertoireNode } from '../../types/chess';
@@ -7,12 +7,14 @@ import { AnalyticsSummaryCards } from './AnalyticsSummaryCards';
 import { OpeningPerformanceTable } from './OpeningPerformanceTable';
 import { RecentGamesList } from './RecentGamesList';
 import { GameImportModal } from './GameImportModal';
+import { GameAnalysisModal } from './GameAnalysisModal';
 import { Globe, RefreshCw, BarChart2 } from 'lucide-react';
 
 export const AnalyticsView: React.FC = () => {
   const [games, setGames] = useState<ImportedGame[]>([]);
   const [whiteNodes, setWhiteNodes] = useState<Map<string, RepertoireNode>>(new Map());
   const [blackNodes, setBlackNodes] = useState<Map<string, RepertoireNode>>(new Map());
+  const [selectedGame, setSelectedGame] = useState<ImportedGame | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -113,8 +115,22 @@ export const AnalyticsView: React.FC = () => {
           <OpeningPerformanceTable openingStats={openingStats} />
 
           {/* Recent Games List */}
-          <RecentGamesList games={processedGames} />
+          <RecentGamesList
+            games={processedGames}
+            onSelectGame={(game) => setSelectedGame(game)}
+          />
         </>
+      )}
+
+      {/* Interactive Game Analysis Modal */}
+      {selectedGame && (
+        <GameAnalysisModal
+          game={selectedGame}
+          whiteNodes={whiteNodes}
+          blackNodes={blackNodes}
+          onClose={() => setSelectedGame(null)}
+          onRefreshRepertoire={loadData}
+        />
       )}
 
       {/* Game Import Modal */}

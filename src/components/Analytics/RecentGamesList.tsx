@@ -1,12 +1,13 @@
 import React from 'react';
 import type { ImportedGame } from '../../types/analytics';
-import { ExternalLink, Check, AlertTriangle, Shield, Clock } from 'lucide-react';
+import { ExternalLink, Check, AlertTriangle, Shield, Clock, Play } from 'lucide-react';
 
 interface RecentGamesListProps {
   games: ImportedGame[];
+  onSelectGame?: (game: ImportedGame) => void;
 }
 
-export const RecentGamesList: React.FC<RecentGamesListProps> = ({ games }) => {
+export const RecentGamesList: React.FC<RecentGamesListProps> = ({ games, onSelectGame }) => {
   const recent = games.slice(0, 20);
 
   const formatDate = (timestamp: number) => {
@@ -21,7 +22,7 @@ export const RecentGamesList: React.FC<RecentGamesListProps> = ({ games }) => {
           <Clock className="w-4 h-4 text-emerald-400" />
           <h3 className="text-sm font-bold text-zinc-100">Son Oynanan Maçlar</h3>
         </div>
-        <span className="text-[11px] text-zinc-500 font-mono">Son {recent.length} maç</span>
+        <span className="text-[11px] text-zinc-500 font-mono">Son {recent.length} maç (İncelemek için tıkla)</span>
       </div>
 
       {recent.length === 0 ? (
@@ -37,7 +38,8 @@ export const RecentGamesList: React.FC<RecentGamesListProps> = ({ games }) => {
             return (
               <div
                 key={game.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60 hover:border-zinc-700 transition text-xs"
+                onClick={() => onSelectGame && onSelectGame(game)}
+                className="flex items-center justify-between p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60 hover:border-emerald-500/50 hover:bg-zinc-950 transition text-xs cursor-pointer group"
               >
                 {/* Left: Result & Opponent */}
                 <div className="flex items-center gap-2.5">
@@ -114,13 +116,25 @@ export const RecentGamesList: React.FC<RecentGamesListProps> = ({ games }) => {
                     {formatDate(game.date)}
                   </span>
 
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onSelectGame) onSelectGame(game);
+                    }}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold transition cursor-pointer"
+                  >
+                    <Play className="w-3 h-3 fill-emerald-400" />
+                    <span>İncele</span>
+                  </button>
+
                   {game.url && (
                     <a
                       href={game.url}
                       target="_blank"
                       rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
                       className="p-1 text-zinc-500 hover:text-emerald-400 transition"
-                      title="Maçı Aç"
+                      title="Lichess / Chess.com'da Aç"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
