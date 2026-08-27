@@ -1,4 +1,4 @@
-﻿import React, { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useDrillSession } from '../../hooks/useDrillSession';
 import { useEvaluation } from '../../hooks/useEvaluation';
 import { ChessgroundBoard } from '../Chessboard/ChessgroundBoard';
@@ -42,7 +42,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
   const evaluation = useEvaluation(currentFen, chess.turn());
 
   const activeRep = repertoires.find(r => r.id === activeRepertoireId);
-  const repName = activeRep ? activeRep.name : 'Repertoar';
+  const repName = activeRep ? activeRep.name : 'Repertuvar';
 
   const handleMove = useCallback(
     (orig: string, dest: string) => {
@@ -66,13 +66,13 @@ export const DrillView: React.FC<DrillViewProps> = ({
         <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-amber-400">
           <Layers className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-zinc-100 mb-2">Repertoarda Hamle Bulunamadı</h2>
+        <h2 className="text-lg font-bold text-zinc-100 mb-2">Repertuvarda Hamle Bulunamadı</h2>
         <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
           Drill antrenmanı yapabilmek için önce Açılış Ağacı sekmesinden tahta üzerinde varyantlar oluşturup kaydetmelisin.
         </p>
         <button
           onClick={onExit}
-          className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold rounded-xl text-xs transition cursor-pointer"
+          className="flex items-center justify-center gap-2 w-full py-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-xl text-xs transition cursor-pointer shadow-md"
         >
           <span>Açılış Ağacına Git</span>
           <ArrowRight className="w-4 h-4" />

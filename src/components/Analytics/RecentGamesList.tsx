@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import type { ImportedGame } from '../../types/analytics';
 import { ExternalLink, Check, AlertTriangle, Shield, Clock } from 'lucide-react';
 
@@ -83,7 +83,7 @@ export const RecentGamesList: React.FC<RecentGamesListProps> = ({ games }) => {
                   {game.matchResult?.whoDeviated === 'user' && (
                     <span
                       className="hidden sm:flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md"
-                      title={`Repertoarından ${game.matchResult.deviationStepIndex! + 1}. hamlede saptın`}
+                      title={`Repertuvarından ${game.matchResult.deviationStepIndex! + 1}. hamlede saptın`}
                     >
                       <AlertTriangle className="w-3 h-3" />
                       <span>{game.matchResult.deviationStepIndex! + 1}.h Sen Saptın</span>
@@ -93,7 +93,7 @@ export const RecentGamesList: React.FC<RecentGamesListProps> = ({ games }) => {
                   {game.matchResult?.whoDeviated === 'opponent' && (
                     <span
                       className="hidden sm:flex items-center gap-1 text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md"
-                      title="Rakip repertoarın dışına çıktı"
+                      title="Rakip repertuvarın dışına çıktı"
                     >
                       <Shield className="w-3 h-3" />
                       <span>Rakip Saptı</span>
@@ -102,8 +102,8 @@ export const RecentGamesList: React.FC<RecentGamesListProps> = ({ games }) => {
 
                   {game.matchResult?.whoDeviated === 'none' && (
                     <span
-                      className="hidden sm:flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md"
-                      title="Maç repertoarına tam uydu"
+                      className="hidden sm:flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md"
+                      title="Maç repertuvarına tam uydu"
                     >
                       <Check className="w-3 h-3" />
                       <span>Tam Uyum</span>

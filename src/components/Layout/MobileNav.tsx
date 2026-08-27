@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import type { ActiveTab } from './Header';
 import { Layers, Dumbbell, BarChart3 } from 'lucide-react';
 
@@ -13,7 +13,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) 
       <button
         onClick={() => onTabChange('repertoire')}
         className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition ${
-          activeTab === 'repertoire' ? 'text-emerald-400' : 'text-zinc-500'
+          activeTab === 'repertoire' ? 'text-amber-400 font-bold' : 'text-zinc-500'
         }`}
       >
         <Layers className="w-5 h-5" />
@@ -23,7 +23,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) 
       <button
         onClick={() => onTabChange('drill')}
         className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition ${
-          activeTab === 'drill' ? 'text-emerald-400' : 'text-zinc-500'
+          activeTab === 'drill' ? 'text-amber-400 font-bold' : 'text-zinc-500'
         }`}
       >
         <Dumbbell className="w-5 h-5" />
@@ -33,7 +33,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) 
       <button
         onClick={() => onTabChange('analytics')}
         className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition ${
-          activeTab === 'analytics' ? 'text-emerald-400' : 'text-zinc-500'
+          activeTab === 'analytics' ? 'text-amber-400 font-bold' : 'text-zinc-500'
         }`}
       >
         <BarChart3 className="w-5 h-5" />

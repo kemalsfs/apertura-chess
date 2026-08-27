@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { OpeningPerformanceStat } from '../../types/analytics';
 import { Layers, Search } from 'lucide-react';
 
@@ -104,7 +104,7 @@ export const OpeningPerformanceTable: React.FC<OpeningPerformanceTableProps> = (
                 <th className="pb-2 font-semibold text-center w-16">Maç</th>
                 <th className="pb-2 font-semibold w-40">Dağılım (G / B / M)</th>
                 <th className="pb-2 font-semibold text-right w-20">Kazanma %</th>
-                <th className="pb-2 font-semibold text-right w-24">Repertoar Sapması</th>
+                <th className="pb-2 font-semibold text-right w-24">Repertuvar Sapması</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
@@ -116,7 +116,7 @@ export const OpeningPerformanceTable: React.FC<OpeningPerformanceTableProps> = (
                   {/* Opening Name & ECO */}
                   <td className="py-2.5 pr-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded shrink-0">
+                      <span className="font-mono text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0">
                         {stat.eco}
                       </span>
                       <span className="font-medium text-zinc-200 truncate max-w-xs" title={stat.name}>
@@ -193,7 +193,7 @@ export const OpeningPerformanceTable: React.FC<OpeningPerformanceTableProps> = (
                   {/* Deviation Count */}
                   <td className="py-2.5 text-right font-mono text-[11px] text-zinc-400">
                     {stat.userDeviations > 0 ? (
-                      <span className="text-amber-400 font-semibold" title="Bu açılışta kendi repertoarından saptığın maçlar">
+                      <span className="text-amber-400 font-semibold" title="Bu açılışta kendi repertuvarından saptığın maçlar">
                         {stat.userDeviations} maçta
                       </span>
                     ) : (

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { fetchOpeningExplorer } from '../../services/lichessExplorer';
 import type { ExplorerResult, ExplorerSource } from '../../types/explorer';
 import type { RepertoireNode } from '../../types/chess';
@@ -74,7 +74,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
       {/* Header & Source Switcher */}
       <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-3">
         <div className="flex items-center gap-2">
-          <Database className="w-4 h-4 text-emerald-400" />
+          <Database className="w-4 h-4 text-amber-400" />
           <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Açılış Veritabanı</span>
         </div>
 
@@ -83,7 +83,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
             onClick={() => setSource('masters')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer ${
               source === 'masters'
-                ? 'bg-zinc-800 text-emerald-400 font-bold shadow-xs'
+                ? 'bg-zinc-800 text-amber-400 font-bold shadow-xs'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -95,7 +95,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
             onClick={() => setSource('lichess')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer ${
               source === 'lichess'
-                ? 'bg-zinc-800 text-emerald-400 font-bold shadow-xs'
+                ? 'bg-zinc-800 text-amber-400 font-bold shadow-xs'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -107,9 +107,9 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
 
       {/* Opening ECO & Name Banner */}
       {data?.opening && (
-        <div className="bg-zinc-950/80 border border-emerald-500/20 rounded-lg px-3 py-2 mb-3 flex items-center justify-between">
+        <div className="bg-zinc-950/80 border border-amber-500/20 rounded-lg px-3 py-2 mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
               {data.opening.eco}
             </span>
             <span className="text-xs font-medium text-zinc-200 truncate max-w-[240px] md:max-w-xs">
@@ -126,7 +126,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
       <div className="flex-1 overflow-y-auto max-h-[260px] pr-1">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-8 text-zinc-500 gap-2">
-            <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+            <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
             <span className="text-xs">İstatistikler yükleniyor...</span>
           </div>
         ) : error ? (
@@ -148,15 +148,15 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
                 >
                   {/* Left: Move & Status */}
                   <div className="flex items-center gap-2 min-w-[90px]">
-                    <span className="font-bold text-sm text-zinc-100 group-hover:text-emerald-400 transition">
+                    <span className="font-bold text-sm text-zinc-100 group-hover:text-amber-400 transition">
                       {m.san}
                     </span>
                     {isSaved ? (
-                      <span className="flex items-center text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-sans font-medium" title="Repertoarda kayıtlı">
+                      <span className="flex items-center text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-sans font-medium" title="Repertuvarda kayıtlı">
                         <Check className="w-3 h-3 mr-0.5" /> Kayıtlı
                       </span>
                     ) : (
-                      <span className="opacity-0 group-hover:opacity-100 transition flex items-center text-[10px] text-zinc-400 hover:text-emerald-300 font-sans">
+                      <span className="opacity-0 group-hover:opacity-100 transition flex items-center text-[10px] text-zinc-400 hover:text-amber-300 font-sans">
                         <Plus className="w-3 h-3 mr-0.5" /> Ekle
                       </span>
                     )}

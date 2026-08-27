@@ -1,4 +1,4 @@
-﻿import { db } from '../db/db';
+import { db } from '../db/db';
 import type { ImportedGame, GameResult } from '../types/analytics';
 import { Chess } from 'chess.js';
 
@@ -45,7 +45,7 @@ export async function syncChessComGames(
     `https://api.chess.com/pub/player/${encodeURIComponent(cleanUsername)}/games/archives`,
     {
       headers: {
-        'User-Agent': 'TheoriaChess/1.0 (contact: kemalos@app.dev)',
+        'User-Agent': 'AperturaChess/2.0 (contact: kemalos@app.dev)',
       },
     }
   );
@@ -77,7 +77,7 @@ export async function syncChessComGames(
     try {
       const monthRes = await fetch(archiveUrl, {
         headers: {
-          'User-Agent': 'TheoriaChess/1.0 (contact: kemalos@app.dev)',
+          'User-Agent': 'AperturaChess/2.0 (contact: kemalos@app.dev)',
         },
       });
 

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Chess } from 'chess.js';
 import { db } from '../db/db';
 import type { RepertoireNode, RepertoireColor, DrawShape } from '../types/chess';
@@ -100,7 +100,7 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
           setStepIndex(prev => prev + 1);
           setFeedback({
             status: 'your_turn',
-            message: 'Sıra Sende: Repertoarındaki doğru hamleyi oyna',
+            message: 'Sıra Sende: Repertuvarındaki doğru hamleyi oyna',
           });
         } catch (err) {
           console.error('Error auto-playing opponent move:', err);
@@ -113,7 +113,7 @@ export function useDrillSession(activeRepertoireId: string, orientation: Reperto
         if (prev.status === 'wrong') return prev; // Keep wrong feedback visible until retry
         return {
           status: 'your_turn',
-          message: 'Sıra Sende: Repertoarındaki doğru hamleyi oyna',
+          message: 'Sıra Sende: Repertuvarındaki doğru hamleyi oyna',
         };
       });
     }

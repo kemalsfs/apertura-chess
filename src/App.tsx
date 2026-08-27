@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRepertoire } from './hooks/useRepertoire';
 import { useEvaluation } from './hooks/useEvaluation';
 import { ChessgroundBoard } from './components/Chessboard/ChessgroundBoard';
@@ -61,7 +61,7 @@ export function App() {
     : undefined;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col pb-16 md:pb-6">
+    <div className="min-h-screen bg-[#0f1117] text-zinc-100 flex flex-col pb-16 md:pb-6">
       {/* Top Header */}
       <Header activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -80,7 +80,7 @@ export function App() {
 
             {isLoading ? (
               <div className="flex items-center justify-center py-20 text-zinc-500 text-sm">
-                Repertoar yükleniyor...
+                Repertuvar yükleniyor...
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -145,10 +145,10 @@ export function App() {
                   />
 
                   {/* Quick Tip Box */}
-                  <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-zinc-400">
-                    <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-zinc-400 shadow-xs">
+                    <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <span className="text-zinc-200 font-medium">İpucu:</span> Tahtada serbestçe hamleler yapıp inceleyebilirsiniz. Beğendiğiniz varyantı kalıcı olarak eklemek için <strong className="text-emerald-400">"Repertoara Kaydet"</strong> butonuna basın.
+                      <span className="text-zinc-200 font-medium">İpucu:</span> Tahtada serbestçe hamleler yapıp inceleyebilirsiniz. Beğendiğiniz varyantı kalıcı olarak eklemek için <strong className="text-amber-400">"Repertuvara Kaydet"</strong> butonuna basın.
                     </div>
                   </div>
                 </div>
