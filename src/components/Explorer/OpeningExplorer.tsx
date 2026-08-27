@@ -20,7 +20,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
   onPlayMove,
 }) => {
   const [source, setSource] = useState<ExplorerSource>('masters');
-  const [explorerTab, setExplorerTab] = useState<'moves' | 'duality'>('moves');
+  const [explorerTab, setExplorerTab] = useState<'moves' | 'duality'>('duality');
   const [data, setData] = useState<ExplorerResult | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

@@ -1,6 +1,6 @@
-﻿export type RepertoireColor = 'white' | 'black';
+export type RepertoireColor = 'white' | 'black';
 
-export type BrushColor = 'green' | 'red' | 'blue' | 'yellow';
+export type BrushColor = 'green' | 'red' | 'blue' | 'yellow' | 'paleGreen' | 'paleBlue' | 'paleRed' | 'paleGrey';
 
 export interface DrawShape {
   orig: string; // e.g. "e2"

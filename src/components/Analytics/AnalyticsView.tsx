@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../../db/db';
 import type { ImportedGame } from '../../types/analytics';
 import type { RepertoireNode } from '../../types/chess';
@@ -51,7 +51,7 @@ export const AnalyticsView: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col max-w-6xl mx-auto w-full">
+    <div className="flex flex-col max-w-7xl mx-auto w-full">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6 shadow-md">
         <div className="flex items-center gap-3">
@@ -107,19 +107,26 @@ export const AnalyticsView: React.FC = () => {
           </button>
         </div>
       ) : (
-        <>
+        <div className="space-y-6">
           {/* Summary KPI Cards */}
           <AnalyticsSummaryCards analytics={overall} />
 
-          {/* Opening Performance Table */}
-          <OpeningPerformanceTable openingStats={openingStats} />
+          {/* 2-Column Responsive Dashboard: Left (Recent Games), Right (Opening Performance) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Column: Recent Games List (Easily accessible) */}
+            <div className="lg:col-span-5">
+              <RecentGamesList
+                games={processedGames}
+                onSelectGame={(game) => setSelectedGame(game)}
+              />
+            </div>
 
-          {/* Recent Games List */}
-          <RecentGamesList
-            games={processedGames}
-            onSelectGame={(game) => setSelectedGame(game)}
-          />
-        </>
+            {/* Right Column: Opening Performance Matrix */}
+            <div className="lg:col-span-7">
+              <OpeningPerformanceTable openingStats={openingStats} />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Interactive Game Analysis Modal */}
