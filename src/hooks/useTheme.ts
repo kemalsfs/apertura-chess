@@ -15,14 +15,20 @@ export function useTheme() {
     localStorage.setItem(STORAGE_KEY, themeId);
 
     // Apply class to html and body
-    document.documentElement.className = `theme-${themeId}`;
-    document.body.className = `theme-${themeId}`;
+    document.documentElement.className = `theme-${themeId} ${theme.isLight ? 'theme-light' : 'theme-dark'}`;
+    document.body.className = `theme-${themeId} ${theme.isLight ? 'theme-light' : 'theme-dark'}`;
 
-    document.documentElement.style.setProperty('--theme-bg-base', theme.bgBase);
-    document.documentElement.style.setProperty('--theme-bg-surface', theme.bgSurface);
-    document.documentElement.style.setProperty('--theme-bg-card', theme.bgCard);
-    document.documentElement.style.setProperty('--theme-accent', theme.accent);
-    document.documentElement.style.setProperty('--theme-accent-hover', theme.accentHover);
+    // CSS Custom properties
+    const root = document.documentElement;
+    root.style.setProperty('--theme-bg-base', theme.bgBase);
+    root.style.setProperty('--theme-bg-surface', theme.bgSurface);
+    root.style.setProperty('--theme-bg-card', theme.bgCard);
+    root.style.setProperty('--theme-text-primary', theme.textPrimary);
+    root.style.setProperty('--theme-text-secondary', theme.textSecondary);
+    root.style.setProperty('--theme-accent', theme.accent);
+    root.style.setProperty('--theme-accent-hover', theme.accentHover);
+    root.style.setProperty('--board-dark', theme.boardDark);
+    root.style.setProperty('--board-light', theme.boardLight);
   }, [themeId, theme]);
 
   return {
