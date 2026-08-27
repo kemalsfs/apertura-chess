@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useRepertoire } from './hooks/useRepertoire';
 import { useEvaluation } from './hooks/useEvaluation';
+import { useTheme } from './hooks/useTheme';
 import { ChessgroundBoard } from './components/Chessboard/ChessgroundBoard';
 import { BoardControls } from './components/Chessboard/BoardControls';
 import { EvalBar } from './components/Chessboard/EvalBar';
@@ -11,12 +12,14 @@ import { MoveAnnotation } from './components/Repertoire/MoveAnnotation';
 import { OpeningExplorer } from './components/Explorer/OpeningExplorer';
 import { DrillView } from './components/Drill/DrillView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
+import { HubView } from './components/Hub/HubView';
 import { Header, type ActiveTab } from './components/Layout/Header';
 import { MobileNav } from './components/Layout/MobileNav';
 import { Info } from 'lucide-react';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('repertoire');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('hub');
+  const { themeId, theme, setThemeId } = useTheme();
 
   const {
     repertoires,
@@ -61,13 +64,31 @@ export function App() {
     : undefined;
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-zinc-100 flex flex-col pb-16 md:pb-6">
+    <div
+      style={{ backgroundColor: theme.bgBase }}
+      className="min-h-screen text-zinc-100 flex flex-col pb-16 md:pb-6 transition-colors duration-300"
+    >
       {/* Top Header */}
-      <Header activeTab={activeTab} onTabChange={setActiveTab} />
+      <Header
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        currentThemeId={themeId}
+        onSelectTheme={setThemeId}
+      />
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
-        {/* Tab 1: Repertoire Builder */}
+        {/* Tab 0: Command Center Hub */}
+        {activeTab === 'hub' && (
+          <HubView
+            repertoires={repertoires}
+            activeRepertoireId={activeRepertoireId}
+            onSelectRepertoire={setActiveRepertoireId}
+            onNavigateTab={setActiveTab}
+          />
+        )}
+
+        {/* Tab 1: Repertoire Builder / Chess Arena */}
         {activeTab === 'repertoire' && (
           <div>
             {/* Repertoire Selector */}
@@ -124,6 +145,7 @@ export function App() {
                   <OpeningExplorer
                     fen={currentFen}
                     currentChildren={currentChildren}
+                    evaluation={evaluation}
                     onPlayMove={playMove}
                   />
                 </div>

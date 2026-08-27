@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { fetchOpeningExplorer } from '../../services/lichessExplorer';
-import type { ExplorerResult, ExplorerSource } from '../../types/explorer';
+import type { ExplorerResult, ExplorerSource, EvaluationResult } from '../../types/explorer';
 import type { RepertoireNode } from '../../types/chess';
-import { Database, Award, Users, Check, Plus, Loader2 } from 'lucide-react';
+import { Database, Award, Users, Check, Plus, Loader2, Zap } from 'lucide-react';
 import { parseUci } from '../../utils/chessHelpers';
+import { DualityPanel } from './DualityPanel';
 
 interface OpeningExplorerProps {
   fen: string;
   currentChildren: RepertoireNode[];
+  evaluation: EvaluationResult;
   onPlayMove: (from: string, to: string, promotion?: string) => void;
 }
 
 export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
   fen,
   currentChildren,
+  evaluation,
   onPlayMove,
 }) => {
   const [source, setSource] = useState<ExplorerSource>('masters');
+  const [explorerTab, setExplorerTab] = useState<'moves' | 'duality'>('moves');
   const [data, setData] = useState<ExplorerResult | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,56 +76,90 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 shadow-md flex flex-col">
-      {/* Header & Source Switcher */}
+      {/* Top Header & Tab Switcher */}
       <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-3">
-        <div className="flex items-center gap-2">
-          <Database className="w-4 h-4 text-amber-400" />
-          <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Açılış Veritabanı</span>
-        </div>
-
+        {/* Main Explorer View Tabs */}
         <div className="flex items-center bg-zinc-950 border border-zinc-800 p-0.5 rounded-lg">
           <button
-            onClick={() => setSource('masters')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer ${
-              source === 'masters'
+            onClick={() => setExplorerTab('moves')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer ${
+              explorerTab === 'moves'
                 ? 'bg-zinc-800 text-amber-400 font-bold shadow-xs'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            <Award className="w-3.5 h-3.5" />
-            Büyükustalar
+            <Database className="w-3.5 h-3.5" />
+            <span>Usta Veritabanı</span>
           </button>
 
           <button
-            onClick={() => setSource('lichess')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer ${
-              source === 'lichess'
+            onClick={() => setExplorerTab('duality')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer ${
+              explorerTab === 'duality'
                 ? 'bg-zinc-800 text-amber-400 font-bold shadow-xs'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            <Users className="w-3.5 h-3.5" />
-            Lichess (Online)
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <span>⚡ Duality & Tuzak</span>
           </button>
         </div>
+
+        {/* Database Source Switcher (Only in moves tab) */}
+        {explorerTab === 'moves' && (
+          <div className="flex items-center bg-zinc-950 border border-zinc-800 p-0.5 rounded-lg">
+            <button
+              onClick={() => setSource('masters')}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer ${
+                source === 'masters'
+                  ? 'bg-zinc-800 text-amber-400 font-bold'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Award className="w-3 h-3" />
+              Büyükustalar
+            </button>
+
+            <button
+              onClick={() => setSource('lichess')}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer ${
+                source === 'lichess'
+                  ? 'bg-zinc-800 text-amber-400 font-bold'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Users className="w-3 h-3" />
+              Lichess
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Opening ECO & Name Banner */}
-      {data?.opening && data.totalGames > 0 && (
-        <div className="bg-zinc-950/80 border border-amber-500/20 rounded-lg px-3 py-2 mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
-              {data.opening.eco}
-            </span>
-            <span className="text-xs font-medium text-zinc-200 truncate max-w-[240px] md:max-w-xs">
-              {data.opening.name}
-            </span>
-          </div>
-          <span className="text-[10px] text-zinc-500 font-mono">
-            {formatCount(data.totalGames)} oyun
-          </span>
-        </div>
-      )}
+      {/* Duality & Trap View */}
+      {explorerTab === 'duality' ? (
+        <DualityPanel
+          explorerData={data}
+          evaluation={evaluation}
+          onPlayMove={onPlayMove}
+        />
+      ) : (
+        <>
+          {/* Opening ECO & Name Banner */}
+          {data?.opening && data.totalGames > 0 && (
+            <div className="bg-zinc-950/80 border border-amber-500/20 rounded-lg px-3 py-2 mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+                  {data.opening.eco}
+                </span>
+                <span className="text-xs font-medium text-zinc-200 truncate max-w-[240px] md:max-w-xs">
+                  {data.opening.name}
+                </span>
+              </div>
+              <span className="text-[10px] text-zinc-500 font-mono">
+                {formatCount(data.totalGames)} oyun
+              </span>
+            </div>
+          )}
 
       {/* Moves List Table */}
       <div className="flex-1 overflow-y-auto max-h-[260px] pr-1">
@@ -215,6 +253,8 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 };
