@@ -2,7 +2,6 @@ import { db } from '../db/db';
 import type { ExplorerResult, ExplorerSource, ExplorerMove } from '../types/explorer';
 import { normalizeFen } from '../utils/chessHelpers';
 import { ECO_BOOK } from '../data/ecoBook';
-import { Chess } from 'chess.js';
 
 // In-Memory Fast Cache
 const memoryCache = new Map<string, ExplorerResult>();
@@ -160,74 +159,8 @@ export async function fetchOpeningExplorer(
       return fallbackResult;
     }
 
-    // If exact position is not in static ECO book, compute legal moves dynamically using chess.js
-    try {
-      const chess = new Chess(fen);
-      const legalMoves = chess.moves({ verbose: true });
-      const fenParts = fen.trim().split(/\s+/);
-      const moveNumber = parseInt(fenParts[5] || '4', 10);
-
-      if (legalMoves.length > 0) {
-        let totalPosWhite = 0;
-        let totalPosDraws = 0;
-        let totalPosBlack = 0;
-
-        // Base game volume drops realistically as depth increases
-        const depthFactor = Math.max(1, moveNumber);
-        const topPool = Math.max(35, Math.floor(18000 / Math.pow(depthFactor, 1.6)));
-
-        const dynamicMoves: ExplorerMove[] = legalMoves.slice(0, 8).map((m, idx) => {
-          // Weight distribution among legal moves
-          const rankWeight = 1 / Math.pow(idx + 1, 1.25);
-          const baseGames = Math.max(8, Math.floor(topPool * rankWeight));
-
-          // Realistic dynamic variance based on piece and move index
-          const whiteRatio = 0.36 + ((idx * 7 + moveNumber * 3) % 9) * 0.01; // 36% - 44%
-          const drawRatio = 0.32 + ((idx * 5 + moveNumber * 2) % 11) * 0.01; // 32% - 42%
-
-          const white = Math.round(baseGames * whiteRatio);
-          const draws = Math.round(baseGames * drawRatio);
-          const black = Math.max(0, baseGames - white - draws);
-          const total = white + draws + black;
-
-          totalPosWhite += white;
-          totalPosDraws += draws;
-          totalPosBlack += black;
-
-          const uci = `${m.from}${m.to}${m.promotion || ''}`;
-
-          return {
-            uci,
-            san: m.san,
-            white,
-            draws,
-            black,
-            averageRating: 2420,
-            whitePercent: total > 0 ? (white / total) * 100 : 0,
-            drawsPercent: total > 0 ? (draws / total) * 100 : 0,
-            blackPercent: total > 0 ? (black / total) * 100 : 0,
-            totalGames: total,
-          };
-        });
-
-        const dynamicResult: ExplorerResult = {
-          moves: dynamicMoves,
-          opening: { eco: 'Varyant', name: 'Derin Açılış Varyantı' },
-          white: totalPosWhite,
-          draws: totalPosDraws,
-          black: totalPosBlack,
-          totalGames: totalPosWhite + totalPosDraws + totalPosBlack,
-        };
-
-        memoryCache.set(cacheKey, dynamicResult);
-        return dynamicResult;
-      }
-    } catch (fallbackErr) {
-      console.warn('Dynamic legal moves fallback error:', fallbackErr);
-    }
-
-    // If neither online nor offline entry exists, return clean empty result instead of crashing
-    return {
+    // Truthful empty result: When an unplayed / out-of-theory position is reached, return 0 games and empty moves
+    const emptyResult: ExplorerResult = {
       moves: [],
       opening: undefined,
       white: 0,
@@ -235,5 +168,8 @@ export async function fetchOpeningExplorer(
       black: 0,
       totalGames: 0,
     };
+
+    memoryCache.set(cacheKey, emptyResult);
+    return emptyResult;
   }
 }
