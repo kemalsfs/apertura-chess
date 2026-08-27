@@ -135,11 +135,24 @@ export const Header: React.FC<HeaderProps> = ({
                   >
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <span
-                          className="w-3 h-3 rounded-full shrink-0 border border-zinc-700"
-                          style={{ backgroundColor: t.accent }}
-                        />
+                        <div className="flex items-center -space-x-1 shrink-0">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full border border-black/20"
+                            style={{ backgroundColor: t.bgBase }}
+                          />
+                          <span
+                            className="w-2.5 h-2.5 rounded-full border border-black/20"
+                            style={{ backgroundColor: t.boardDark }}
+                          />
+                          <span
+                            className="w-2.5 h-2.5 rounded-full border border-black/20"
+                            style={{ backgroundColor: t.accent }}
+                          />
+                        </div>
                         <span className="font-semibold text-xs">{t.name}</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/10 text-zinc-400 font-mono">
+                          {t.badge}
+                        </span>
                       </div>
                       <p className="text-[10px] text-zinc-500">{t.description}</p>
                     </div>

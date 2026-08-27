@@ -3,24 +3,24 @@
 @import "chessground/assets/chessground.cburnett.css";
 
 /* =========================================================
-   DEFAULT VARIABLES
+   DEFAULT VARIABLES (Color Hunt Theme Engine)
    ========================================================= */
 
 :root {
-  color-scheme: dark;
-  --theme-bg-base: #12151e;
-  --theme-bg-surface: #181d2a;
-  --theme-bg-card: #202637;
-  --theme-text-primary: #f4f4f5;
-  --theme-text-secondary: #9ca3af;
+  --theme-bg-base: #0f172a;
+  --theme-bg-surface: #1e293b;
+  --theme-bg-card: #27354a;
+  --theme-text-primary: #f8fafc;
+  --theme-text-secondary: #94a3b8;
   --theme-accent: #f59e0b;
   --theme-accent-hover: #d97706;
-  --board-dark: #b58863;
-  --board-light: #f0d9b5;
+  --theme-accent-text: #0f172a;
+  --board-dark: #3b536f;
+  --board-light: #dce7f3;
 }
 
 /* =========================================================
-   BODY AND ATMOSPHERE (Eye-Friendly, Matte, Zero Glare)
+   BODY AND ATMOSPHERE
    ========================================================= */
 
 body {
@@ -34,7 +34,7 @@ body {
 }
 
 /* =========================================================
-   MATHEMATICAL 8x8 CHECKERBOARD (Clean, Matte Squares)
+   MATHEMATICAL 8x8 CHECKERBOARD (Clean Matte Color Hunt Squares)
    ========================================================= */
 
 .cg-wrap {
@@ -60,42 +60,58 @@ body {
 }
 
 /* =========================================================
-   LIGHT THEME ADJUSTMENTS (Matte Paper / Parchment)
+   THEME ADAPTATION OVERRIDES
    ========================================================= */
 
+/* Light Theme Mode */
 .theme-light {
   color-scheme: light;
 }
 
 .theme-light .text-zinc-100,
 .theme-light .text-zinc-200 {
-  color: #29221b !important;
+  color: var(--theme-text-primary) !important;
 }
 
 .theme-light .text-zinc-300,
 .theme-light .text-zinc-400 {
-  color: #5c5043 !important;
+  color: var(--theme-text-secondary) !important;
 }
 
 .theme-light .text-zinc-500,
 .theme-light .text-zinc-600 {
-  color: #7d6f5f !important;
+  color: var(--theme-text-secondary) !important;
+  opacity: 0.85;
 }
 
 .theme-light .bg-zinc-900,
 .theme-light .bg-zinc-950 {
-  background-color: rgba(255, 255, 255, 0.45) !important;
-  border-color: rgba(60, 45, 30, 0.12) !important;
+  background-color: var(--theme-bg-card) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
 }
 
 .theme-light .border-zinc-800,
 .theme-light .border-zinc-700 {
-  border-color: rgba(60, 45, 30, 0.14) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
 }
 
 .theme-light .bg-zinc-800 {
-  background-color: rgba(230, 222, 210, 0.8) !important;
-  color: #29221b !important;
+  background-color: var(--theme-bg-surface) !important;
+  color: var(--theme-text-primary) !important;
+}
+
+/* Dark Theme Mode */
+.theme-dark {
+  color-scheme: dark;
+}
+
+.theme-dark .bg-zinc-900,
+.theme-dark .bg-zinc-950 {
+  background-color: var(--theme-bg-surface) !important;
+}
+
+.theme-dark .bg-zinc-800 {
+  background-color: var(--theme-bg-card) !important;
 }
 
 /* Custom Scrollbar */
@@ -109,7 +125,8 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(120, 120, 120, 0.25);
+  background: var(--theme-text-secondary);
+  opacity: 0.25;
   border-radius: 4px;
 }
 
