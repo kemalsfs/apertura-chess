@@ -13538,78 +13538,36 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "rnbqkb1r/pppppppp/5n2/8/2PP4/8/PP2PPPP/RNBQKBNR b KQkq -": {
-    "eco": "A52",
-    "name": "Indian Defense: Budapest Gambit Accepted, Main Line, Alekhine Variation, Tartakower Defense",
+    "eco": "E00",
+    "name": "Hint Savunması: 2. c4",
     "moves": [
       {
         "uci": "e7e6",
         "san": "e6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 36400,
+        "draws": 41200,
+        "black": 22400
       },
       {
         "uci": "g7g6",
         "san": "g6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 32100,
+        "draws": 34200,
+        "black": 21700
       },
       {
         "uci": "c7c5",
         "san": "c5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 8400,
+        "draws": 7600,
+        "black": 6000
       },
       {
         "uci": "d7d6",
         "san": "d6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "e7e5",
-        "san": "e5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "b8c6",
-        "san": "Nc6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "g7g5",
-        "san": "g5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "b7b5",
-        "san": "b5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "b7b6",
-        "san": "b6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "c7c6",
-        "san": "c6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 2100,
+        "draws": 1800,
+        "black": 1500
       }
     ]
   },
@@ -34799,99 +34757,43 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq -": {
-    "eco": "B33",
-    "name": "Sicilian Defense: Lasker-Pelikan Variation, Sveshnikov Variation, Peresypkin's Sacrifice",
+    "eco": "B27",
+    "name": "Sicilya Savunması: 2. Af3",
     "moves": [
       {
         "uci": "d7d6",
         "san": "d6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 34200,
+        "draws": 31400,
+        "black": 24400
       },
       {
         "uci": "b8c6",
         "san": "Nc6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 22400,
+        "draws": 19800,
+        "black": 15800
       },
       {
         "uci": "e7e6",
         "san": "e6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "a7a6",
-        "san": "a6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 18200,
+        "draws": 15600,
+        "black": 12200
       },
       {
         "uci": "g7g6",
         "san": "g6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 1400,
+        "draws": 1100,
+        "black": 1100
       },
       {
-        "uci": "g8f6",
-        "san": "Nf6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "f7f5",
-        "san": "f5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "h7h6",
-        "san": "h6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "e7e5",
-        "san": "e5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "b7b6",
-        "san": "b6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "d8a5",
-        "san": "Qa5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "b7b5",
-        "san": "b5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "d8c7",
-        "san": "Qc7",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "uci": "a7a6",
+        "san": "a6",
+        "white": 1200,
+        "draws": 950,
+        "black": 850
       }
     ]
   },
@@ -48972,56 +48874,42 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
   },
   "rnbqkbnr/pppp1ppp/8/4p3/2B1P3/8/PPPP1PPP/RNBQK1NR b KQkq -": {
     "eco": "C23",
-    "name": "Bishop's Opening: McDonnell Gambit, La Bourdonnais-Denker Gambit",
+    "name": "Fil Açılışı (Bishop's Opening)",
     "moves": [
-      {
-        "uci": "f8c5",
-        "san": "Bc5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
       {
         "uci": "g8f6",
         "san": "Nf6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 4820,
+        "draws": 4510,
+        "black": 3170
       },
       {
-        "uci": "b7b5",
-        "san": "b5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "f7f5",
-        "san": "f5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "c7c6",
-        "san": "c6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "d7d5",
-        "san": "d5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "uci": "f8c5",
+        "san": "Bc5",
+        "white": 3910,
+        "draws": 3680,
+        "black": 2810
       },
       {
         "uci": "b8c6",
         "san": "Nc6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 980,
+        "draws": 740,
+        "black": 680
+      },
+      {
+        "uci": "c7c6",
+        "san": "c6",
+        "white": 460,
+        "draws": 380,
+        "black": 360
+      },
+      {
+        "uci": "d7d6",
+        "san": "d6",
+        "white": 380,
+        "draws": 290,
+        "black": 230
       }
     ]
   },
@@ -49731,50 +49619,29 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "rnbqkb1r/pppp1ppp/5n2/4p3/2B1P3/8/PPPP1PPP/RNBQK1NR w KQkq -": {
-    "eco": "C43",
-    "name": "Bishop's Opening: Urusov Gambit, Keidansky Gambit",
+    "eco": "C24",
+    "name": "Fil Açılışı: Berlin Savunması",
     "moves": [
-      {
-        "uci": "d2d4",
-        "san": "d4",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
       {
         "uci": "d2d3",
         "san": "d3",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 2680,
+        "draws": 2740,
+        "black": 1780
       },
       {
-        "uci": "f2f4",
-        "san": "f4",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "f2f3",
-        "san": "f3",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "g1e2",
-        "san": "Ne2",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "uci": "g1f3",
+        "san": "Nf3",
+        "white": 1420,
+        "draws": 1360,
+        "black": 920
       },
       {
         "uci": "b1c3",
         "san": "Nc3",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 620,
+        "draws": 510,
+        "black": 370
       }
     ]
   },
@@ -52419,15 +52286,29 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/8/PPPP1PPP/RNBQK1NR w KQkq -": {
-    "eco": "C30",
-    "name": "King's Gambit Declined: Classical, Svenonius Variation",
+    "eco": "C23",
+    "name": "Fil Açılışı: Klasik Varyant",
     "moves": [
       {
-        "uci": "b1c3",
-        "san": "Nc3",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "uci": "g1f3",
+        "san": "Nf3",
+        "white": 2140,
+        "draws": 1980,
+        "black": 1480
+      },
+      {
+        "uci": "d2d3",
+        "san": "d3",
+        "white": 1120,
+        "draws": 1040,
+        "black": 840
+      },
+      {
+        "uci": "c2c3",
+        "san": "c3",
+        "white": 680,
+        "draws": 560,
+        "black": 560
       }
     ]
   },
@@ -59697,85 +59578,43 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -": {
-    "eco": "C57",
-    "name": "Italian Game: Two Knights Defense, Traxler Variation, Trencianske-Teplice Gambit",
+    "eco": "C44",
+    "name": "Açık Oyun: Şah Atı Varyantı",
     "moves": [
       {
         "uci": "f1b5",
         "san": "Bb5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 41200,
+        "draws": 42800,
+        "black": 26000
       },
       {
         "uci": "f1c4",
         "san": "Bc4",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 18400,
+        "draws": 17200,
+        "black": 12400
       },
       {
         "uci": "d2d4",
         "san": "d4",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 8200,
+        "draws": 7600,
+        "black": 5200
       },
       {
         "uci": "b1c3",
         "san": "Nc3",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 4200,
+        "draws": 4800,
+        "black": 3000
       },
       {
         "uci": "c2c3",
         "san": "c3",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "f1e2",
-        "san": "Be2",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "c2c4",
-        "san": "c4",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "f3e5",
-        "san": "Nxe5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "g2g3",
-        "san": "g3",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "b2b4",
-        "san": "b4",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "d2d3",
-        "san": "d3",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 1200,
+        "draws": 1100,
+        "black": 900
       }
     ]
   },
@@ -60353,57 +60192,29 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     ]
   },
   "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq -": {
-    "eco": "C57",
-    "name": "Italian Game: Two Knights Defense, Traxler Variation, Trencianske-Teplice Gambit",
+    "eco": "C50",
+    "name": "İtalyan Açılışı (Giuoco Piano)",
     "moves": [
       {
         "uci": "f8c5",
         "san": "Bc5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 9800,
+        "draws": 9200,
+        "black": 6600
       },
       {
         "uci": "g8f6",
         "san": "Nf6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 7800,
+        "draws": 7400,
+        "black": 5200
       },
       {
         "uci": "f8e7",
         "san": "Be7",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "h7h6",
-        "san": "h6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "c6d4",
-        "san": "Nd4",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "d7d6",
-        "san": "d6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "f7f5",
-        "san": "f5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 820,
+        "draws": 740,
+        "black": 540
       }
     ]
   },
@@ -68972,134 +68783,36 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq -": {
-    "eco": "C70",
-    "name": "Ruy Lopez: Morphy Defense, Schliemann Defense Deferred, Jaenisch Gambit Deferred",
+    "eco": "C60",
+    "name": "İspanyol Açılışı (Ruy Lopez)",
     "moves": [
       {
         "uci": "a7a6",
         "san": "a6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 29400,
+        "draws": 31200,
+        "black": 19400
       },
       {
         "uci": "g8f6",
         "san": "Nf6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 8400,
+        "draws": 9800,
+        "black": 5800
       },
       {
         "uci": "f7f5",
         "san": "f5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 1400,
+        "draws": 1100,
+        "black": 1100
       },
       {
         "uci": "f8c5",
         "san": "Bc5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "d7d6",
-        "san": "d6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "g7g6",
-        "san": "g6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "d7d5",
-        "san": "d5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "f8b4",
-        "san": "Bb4",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "g8e7",
-        "san": "Nge7",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "c6d4",
-        "san": "Nd4",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "g7g5",
-        "san": "g5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "a7a5",
-        "san": "a5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "f8e7",
-        "san": "Be7",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "f7f6",
-        "san": "f6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "c6a5",
-        "san": "Na5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "c6b8",
-        "san": "Nb8",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "b7b6",
-        "san": "b6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "d8e7",
-        "san": "Qe7",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 1200,
+        "draws": 1050,
+        "black": 850
       }
     ]
   },
@@ -77745,71 +77458,43 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP2PPPP/RNBQKBNR b KQkq -": {
-    "eco": "D26",
-    "name": "Queen's Gambit Accepted: Classical Defense, Steinitz Variation, Development Variation",
+    "eco": "D06",
+    "name": "Vezir Gambiti (Queen's Gambit)",
     "moves": [
       {
         "uci": "e7e6",
         "san": "e6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 26800,
+        "draws": 31200,
+        "black": 16000
       },
       {
         "uci": "c7c6",
         "san": "c6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 21400,
+        "draws": 24800,
+        "black": 13800
       },
       {
         "uci": "d5c4",
         "san": "dxc4",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "e7e5",
-        "san": "e5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 5400,
+        "draws": 5200,
+        "black": 3400
       },
       {
         "uci": "b8c6",
         "san": "Nc6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "white": 1200,
+        "draws": 900,
+        "black": 900
       },
       {
-        "uci": "c7c5",
-        "san": "c5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "c8f5",
-        "san": "Bf5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "g8f6",
-        "san": "Nf6",
-        "white": 0,
-        "draws": 0,
-        "black": 0
-      },
-      {
-        "uci": "b7b5",
-        "san": "b5",
-        "white": 0,
-        "draws": 0,
-        "black": 0
+        "uci": "e7e5",
+        "san": "e5",
+        "white": 850,
+        "draws": 450,
+        "black": 700
       }
     ]
   },
