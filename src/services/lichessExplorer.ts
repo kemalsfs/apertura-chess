@@ -8,10 +8,17 @@ import { LICHESS_PLAYER_BOOK } from '../data/lichessPlayerBook';
 const memoryCache = new Map<string, ExplorerResult>();
 
 export const LICHESS_TOKEN_KEY = 'apertura_lichess_token';
+export const CACHE_VERSION = 'v4';
 
 export function getLichessToken(): string {
   if (typeof window === 'undefined') return '';
-  return localStorage.getItem(LICHESS_TOKEN_KEY) || '';
+  const stored = localStorage.getItem(LICHESS_TOKEN_KEY);
+  if (stored && stored.trim()) return stored.trim();
+  const envToken = import.meta.env.VITE_LICHESS_API_TOKEN;
+  if (envToken && typeof envToken === 'string' && envToken.trim()) {
+    return envToken.trim();
+  }
+  return '';
 }
 
 export function setLichessToken(token: string): void {
@@ -29,7 +36,7 @@ export async function fetchOpeningExplorer(
   signal?: AbortSignal
 ): Promise<ExplorerResult> {
   const normFen = normalizeFen(fen);
-  const cacheKey = `${source}:${normFen}`;
+  const cacheKey = `${CACHE_VERSION}:${source}:${normFen}`;
 
   // 1. Check in-memory cache
   if (memoryCache.has(cacheKey)) {
