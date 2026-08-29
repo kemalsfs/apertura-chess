@@ -492,7 +492,7 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                 {masterMoves.length === 0 ? (
                   <div className="text-zinc-600 italic text-[10px] py-2">Teori sonu</div>
                 ) : (
-                  masterMoves.map((m, idx) => {
+                  masterMoves.map((m: any, idx: number) => {
                     const totalG = (m.white || 0) + (m.draws || 0) + (m.black || 0);
                     return (
                       <div key={m.uci} className="flex items-center justify-between text-[10px] font-mono bg-zinc-900/60 p-1 rounded">

@@ -384,6 +384,19 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
          ========================================================= */}
       {activeTab === 'theory' && (
         <div className="space-y-2">
+          {/* Lichess Token Guidance Notice */}
+          {source === 'lichess' && !hasToken && (
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-[11px] text-blue-300">
+              <span>💡 Canlı Lichess oyuncu verileri için API Token ekleyebilirsiniz. (Şu an çevrimdışı temel teori devrede)</span>
+              <button
+                onClick={() => setIsTokenModalOpen(true)}
+                className="text-amber-400 font-bold hover:underline ml-2 shrink-0 cursor-pointer text-[10px]"
+              >
+                Token Ekle
+              </button>
+            </div>
+          )}
+
           {/* Opening ECO & Name Header */}
           {data?.opening && data.totalGames > 0 && (
             <div className="bg-zinc-900/80 border border-amber-500/20 rounded-xl px-3 py-1.5 flex items-center justify-between">

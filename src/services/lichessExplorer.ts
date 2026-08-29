@@ -137,12 +137,12 @@ export async function fetchOpeningExplorer(
   } catch (apiError) {
     // Offline fallback: Use exact master games from ECO_BOOK without artificial scaling
     const localEco = ECO_BOOK[normFen];
-    if (localEco && source === 'masters') {
+    if (localEco) {
       let totalPosWhite = 0;
       let totalPosDraws = 0;
       let totalPosBlack = 0;
 
-      const calculatedMoves: ExplorerMove[] = localEco.moves.map(m => {
+      const calculatedMoves: ExplorerMove[] = localEco.moves.map((m: any) => {
         const white = m.white || 0;
         const draws = m.draws || 0;
         const black = m.black || 0;
@@ -158,7 +158,7 @@ export async function fetchOpeningExplorer(
           white,
           draws,
           black,
-          averageRating: 2480,
+          averageRating: source === 'masters' ? 2480 : 1950,
           whitePercent: total > 0 ? (white / total) * 100 : 0,
           drawsPercent: total > 0 ? (draws / total) * 100 : 0,
           blackPercent: total > 0 ? (black / total) * 100 : 0,

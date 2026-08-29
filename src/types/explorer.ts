@@ -13,6 +13,20 @@ export interface ExplorerMove {
   totalGames: number;
 }
 
+export interface EcoMove {
+  uci: string;
+  san: string;
+  white: number;
+  draws: number;
+  black: number;
+}
+
+export interface EcoPosition {
+  eco: string;
+  name: string;
+  moves: EcoMove[];
+}
+
 export interface OpeningInfo {
   eco: string;
   name: string;

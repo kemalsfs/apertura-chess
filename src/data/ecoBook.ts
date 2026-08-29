@@ -1,18 +1,5 @@
-export interface EcoPositionMove {
-  uci: string;
-  san: string;
-  white: number;
-  draws: number;
-  black: number;
-}
+import type { EcoPosition } from '../types/explorer';
 
-export interface EcoPosition {
-  eco: string;
-  name: string;
-  moves: EcoPositionMove[];
-}
-
-// Verified Grandmaster Opening DAG Graph
 export const ECO_BOOK: Record<string, EcoPosition> = {
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -": {
     "eco": "A00",
@@ -111,49 +98,91 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     ]
   },
   "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": {
-    "eco": "B90",
-    "name": "Sicilya Savunması: Najdorf Varyantı",
+    "eco": "B20",
+    "name": "Sicilya Savunması (Sicilian Defense)",
     "moves": [
       {
         "uci": "g1f3",
         "san": "Nf3",
-        "white": 25142,
-        "draws": 27181,
-        "black": 15629
+        "white": 71838,
+        "draws": 62628,
+        "black": 49734
+      },
+      {
+        "uci": "b1c3",
+        "san": "Nc3",
+        "white": 8512,
+        "draws": 7392,
+        "black": 6496
       },
       {
         "uci": "c2c3",
         "san": "c3",
-        "white": 23783,
-        "draws": 23783,
-        "black": 20386
+        "white": 6882,
+        "draws": 6696,
+        "black": 5022
+      },
+      {
+        "uci": "d2d4",
+        "san": "d4",
+        "white": 2856,
+        "draws": 1700,
+        "black": 2244
+      },
+      {
+        "uci": "f2f4",
+        "san": "f4",
+        "white": 2160,
+        "draws": 1512,
+        "black": 1728
+      },
+      {
+        "uci": "g2g3",
+        "san": "g3",
+        "white": 1558,
+        "draws": 1435,
+        "black": 1107
       }
     ]
   },
   "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq -": {
-    "eco": "B90",
-    "name": "Sicilya Savunması: Najdorf Varyantı",
+    "eco": "B27",
+    "name": "Açık Sicilya Hazırlığı (Sicilian: Open)",
     "moves": [
       {
         "uci": "d7d6",
         "san": "d6",
-        "white": 15650,
-        "draws": 14826,
-        "black": 10707
+        "white": 34476,
+        "draws": 29172,
+        "black": 24752
       },
       {
         "uci": "b8c6",
         "san": "Nc6",
-        "white": 15650,
-        "draws": 14826,
-        "black": 10707
+        "white": 20596,
+        "draws": 18428,
+        "black": 15176
       },
       {
         "uci": "e7e6",
         "san": "e6",
-        "white": 15650,
-        "draws": 15238,
-        "black": 10295
+        "white": 17784,
+        "draws": 16380,
+        "black": 12636
+      },
+      {
+        "uci": "g7g6",
+        "san": "g6",
+        "white": 4598,
+        "draws": 3872,
+        "black": 3630
+      },
+      {
+        "uci": "a7a6",
+        "san": "a6",
+        "white": 1092,
+        "draws": 952,
+        "black": 756
       }
     ]
   },
@@ -1035,62 +1064,125 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": {
-    "eco": "C65",
-    "name": "İspanyol Açılışı: Berlin Savunması",
+    "eco": "C20",
+    "name": "Açık Oyun (Open Game)",
     "moves": [
       {
         "uci": "g1f3",
         "san": "Nf3",
-        "white": 25142,
-        "draws": 27181,
-        "black": 15629
-      }
-    ]
-  },
-  "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq -": {
-    "eco": "C65",
-    "name": "İspanyol Açılışı: Berlin Savunması",
-    "moves": [
-      {
-        "uci": "b8c6",
-        "san": "Nc6",
-        "white": 15650,
-        "draws": 14826,
-        "black": 10707
+        "white": 62396,
+        "draws": 57470,
+        "black": 44334
       },
       {
-        "uci": "g8f6",
-        "san": "Nf6",
-        "white": 15650,
-        "draws": 15238,
-        "black": 10295
-      }
-    ]
-  },
-  "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -": {
-    "eco": "C65",
-    "name": "İspanyol Açılışı: Berlin Savunması",
-    "moves": [
-      {
-        "uci": "f1b5",
-        "san": "Bb5",
-        "white": 8736,
-        "draws": 8736,
-        "black": 7488
+        "uci": "b1c3",
+        "san": "Nc3",
+        "white": 4992,
+        "draws": 4096,
+        "black": 3712
       },
       {
         "uci": "f1c4",
         "san": "Bc4",
-        "white": 8736,
-        "draws": 8736,
-        "black": 7488
+        "white": 3848,
+        "draws": 3432,
+        "black": 3120
+      },
+      {
+        "uci": "f2f4",
+        "san": "f4",
+        "white": 3440,
+        "draws": 2322,
+        "black": 2838
       },
       {
         "uci": "d2d4",
         "san": "d4",
-        "white": 9734,
-        "draws": 8486,
-        "black": 6740
+        "white": 1596,
+        "draws": 1176,
+        "black": 1428
+      },
+      {
+        "uci": "c2c3",
+        "san": "c3",
+        "white": 777,
+        "draws": 651,
+        "black": 672
+      }
+    ]
+  },
+  "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq -": {
+    "eco": "C40",
+    "name": "Şah Atı Açılışı (King's Knight Opening)",
+    "moves": [
+      {
+        "uci": "b8c6",
+        "san": "Nc6",
+        "white": 53998,
+        "draws": 51156,
+        "black": 36946
+      },
+      {
+        "uci": "g8f6",
+        "san": "Nf6",
+        "white": 8712,
+        "draws": 11880,
+        "black": 5808
+      },
+      {
+        "uci": "d7d6",
+        "san": "d6",
+        "white": 3738,
+        "draws": 2848,
+        "black": 2314
+      },
+      {
+        "uci": "f7f5",
+        "san": "f5",
+        "white": 564,
+        "draws": 276,
+        "black": 360
+      }
+    ]
+  },
+  "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -": {
+    "eco": "C44",
+    "name": "Açık Oyun: İki At / Ana Hat",
+    "moves": [
+      {
+        "uci": "f1b5",
+        "san": "Bb5",
+        "white": 36036,
+        "draws": 35112,
+        "black": 21252
+      },
+      {
+        "uci": "f1c4",
+        "san": "Bc4",
+        "white": 14282,
+        "draws": 14282,
+        "black": 10036
+      },
+      {
+        "uci": "d2d4",
+        "san": "d4",
+        "white": 8056,
+        "draws": 7420,
+        "black": 5724
+      },
+      {
+        "uci": "b1c3",
+        "san": "Nc3",
+        "white": 3332,
+        "draws": 4410,
+        "black": 2058
+      },
+      {
+        "uci": "c2c3",
+        "san": "c3",
+        "white": 1216,
+        "draws": 1056,
+        "black": 928
       }
     ]
   },
@@ -2114,15 +2206,36 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": {
-    "eco": "C02",
-    "name": "Fransız Savunması: İlerleme Varyantı",
+    "eco": "C00",
+    "name": "Fransız Savunması (French Defense)",
     "moves": [
       {
         "uci": "d2d4",
         "san": "d4",
-        "white": 26501,
-        "draws": 23104,
-        "black": 18347
+        "white": 30576,
+        "draws": 26656,
+        "black": 21168
+      },
+      {
+        "uci": "d2d3",
+        "san": "d3",
+        "white": 1976,
+        "draws": 1768,
+        "black": 1456
+      },
+      {
+        "uci": "g1f3",
+        "san": "Nf3",
+        "white": 1178,
+        "draws": 1054,
+        "black": 868
+      },
+      {
+        "uci": "c2c4",
+        "san": "c4",
+        "white": 702,
+        "draws": 612,
+        "black": 486
       }
     ]
   },
@@ -2140,22 +2253,36 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     ]
   },
   "rnbqkbnr/ppp2ppp/4p3/3p4/3PP3/8/PPP2PPP/RNBQKBNR w KQkq -": {
-    "eco": "C02",
-    "name": "Fransız Savunması: İlerleme Varyantı",
+    "eco": "C01",
+    "name": "Fransız Savunması: Ana Gövde",
     "moves": [
-      {
-        "uci": "e4e5",
-        "san": "e5",
-        "white": 8736,
-        "draws": 8736,
-        "black": 7488
-      },
       {
         "uci": "b1c3",
         "san": "Nc3",
-        "white": 8736,
-        "draws": 8736,
-        "black": 7488
+        "white": 16419,
+        "draws": 14735,
+        "black": 10946
+      },
+      {
+        "uci": "b1d2",
+        "san": "Nd2",
+        "white": 9768,
+        "draws": 9768,
+        "black": 6864
+      },
+      {
+        "uci": "e4e5",
+        "san": "e5",
+        "white": 7280,
+        "draws": 5824,
+        "black": 5096
+      },
+      {
+        "uci": "e4d5",
+        "san": "exd5",
+        "white": 3168,
+        "draws": 4512,
+        "black": 1920
       }
     ]
   },
@@ -2676,15 +2803,36 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": {
-    "eco": "B12",
-    "name": "Caro-Kann Savunması: İlerleme Varyantı",
+    "eco": "B10",
+    "name": "Caro-Kann Savunması",
     "moves": [
       {
         "uci": "d2d4",
         "san": "d4",
-        "white": 26501,
-        "draws": 23104,
-        "black": 18347
+        "white": 24716,
+        "draws": 26720,
+        "black": 15364
+      },
+      {
+        "uci": "b1c3",
+        "san": "Nc3",
+        "white": 2052,
+        "draws": 1944,
+        "black": 1404
+      },
+      {
+        "uci": "c2c4",
+        "san": "c4",
+        "white": 1064,
+        "draws": 1008,
+        "black": 728
+      },
+      {
+        "uci": "d2d3",
+        "san": "d3",
+        "white": 592,
+        "draws": 560,
+        "black": 448
       }
     ]
   },
@@ -2703,21 +2851,35 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
   },
   "rnbqkbnr/pp2pppp/2p5/3p4/3PP3/8/PPP2PPP/RNBQKBNR w KQkq -": {
     "eco": "B12",
-    "name": "Caro-Kann Savunması: İlerleme Varyantı",
+    "name": "Caro-Kann Savunması: Ana Gövde",
     "moves": [
-      {
-        "uci": "e4e5",
-        "san": "e5",
-        "white": 8736,
-        "draws": 8736,
-        "black": 7488
-      },
       {
         "uci": "b1c3",
         "san": "Nc3",
-        "white": 8736,
-        "draws": 8736,
-        "black": 7488
+        "white": 11932,
+        "draws": 12560,
+        "black": 6908
+      },
+      {
+        "uci": "e4e5",
+        "san": "e5",
+        "white": 9438,
+        "draws": 8712,
+        "black": 6050
+      },
+      {
+        "uci": "e4d5",
+        "san": "exd5",
+        "white": 5328,
+        "draws": 5920,
+        "black": 3552
+      },
+      {
+        "uci": "b1d2",
+        "san": "Nd2",
+        "white": 2356,
+        "draws": 2480,
+        "black": 1364
       }
     ]
   },
@@ -3544,35 +3706,112 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     ]
   },
   "rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq -": {
-    "eco": "D37",
-    "name": "Vezir Gambiti Kabul Edilmeyen (QGD)",
+    "eco": "D00",
+    "name": "Vezir Piyonu Oyunu (Queen's Pawn Game)",
     "moves": [
       {
         "uci": "c2c4",
         "san": "c4",
-        "white": 25142,
-        "draws": 27181,
-        "black": 15629
+        "white": 54150,
+        "draws": 57000,
+        "black": 31350
+      },
+      {
+        "uci": "g1f3",
+        "san": "Nf3",
+        "white": 17834,
+        "draws": 20244,
+        "black": 10122
+      },
+      {
+        "uci": "c1f4",
+        "san": "Bf4",
+        "white": 14668,
+        "draws": 13896,
+        "black": 10036
+      },
+      {
+        "uci": "b1c3",
+        "san": "Nc3",
+        "white": 3276,
+        "draws": 2688,
+        "black": 2436
+      },
+      {
+        "uci": "e2e3",
+        "san": "e3",
+        "white": 2736,
+        "draws": 2888,
+        "black": 1976
+      },
+      {
+        "uci": "c1g5",
+        "san": "Bg5",
+        "white": 1681,
+        "draws": 1230,
+        "black": 1189
+      },
+      {
+        "uci": "g2g3",
+        "san": "g3",
+        "white": 1444,
+        "draws": 1520,
+        "black": 836
       }
     ]
   },
   "rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP2PPPP/RNBQKBNR b KQkq -": {
-    "eco": "D37",
-    "name": "Vezir Gambiti Kabul Edilmeyen (QGD)",
+    "eco": "D06",
+    "name": "Vezir Gambiti (Queen's Gambit)",
     "moves": [
       {
         "uci": "e7e6",
         "san": "e6",
-        "white": 15650,
-        "draws": 15238,
-        "black": 10295
+        "white": 26676,
+        "draws": 28044,
+        "black": 13680
       },
       {
         "uci": "c7c6",
         "san": "c6",
-        "white": 15650,
-        "draws": 14826,
-        "black": 10707
+        "white": 19512,
+        "draws": 23306,
+        "black": 11382
+      },
+      {
+        "uci": "d5c4",
+        "san": "dxc4",
+        "white": 7371,
+        "draws": 7182,
+        "black": 4347
+      },
+      {
+        "uci": "e7e5",
+        "san": "e5",
+        "white": 1232,
+        "draws": 784,
+        "black": 784
+      },
+      {
+        "uci": "b8c6",
+        "san": "Nc6",
+        "white": 1008,
+        "draws": 744,
+        "black": 648
+      },
+      {
+        "uci": "c7c5",
+        "san": "c5",
+        "white": 720,
+        "draws": 560,
+        "black": 320
+      },
+      {
+        "uci": "c1f5",
+        "san": "Bf5",
+        "white": 539,
+        "draws": 341,
+        "black": 220
       }
     ]
   },
@@ -4281,42 +4520,98 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "rnbqkb1r/pppppppp/5n2/8/3P4/8/PPP1PPPP/RNBQKBNR w KQkq -": {
-    "eco": "E60",
-    "name": "Şah-Hint Savunması (KID)",
+    "eco": "A45",
+    "name": "Hint Savunması (Indian Defense)",
     "moves": [
       {
         "uci": "c2c4",
         "san": "c4",
-        "white": 25142,
-        "draws": 27181,
-        "black": 15629
+        "white": 71136,
+        "draws": 74784,
+        "black": 36480
+      },
+      {
+        "uci": "g1f3",
+        "san": "Nf3",
+        "white": 19277,
+        "draws": 21882,
+        "black": 10941
+      },
+      {
+        "uci": "c1f4",
+        "san": "Bf4",
+        "white": 9424,
+        "draws": 8928,
+        "black": 6448
+      },
+      {
+        "uci": "c1g5",
+        "san": "Bg5",
+        "white": 7720,
+        "draws": 6176,
+        "black": 5404
+      },
+      {
+        "uci": "b1c3",
+        "san": "Nc3",
+        "white": 1794,
+        "draws": 1472,
+        "black": 1334
+      },
+      {
+        "uci": "g2g3",
+        "san": "g3",
+        "white": 1365,
+        "draws": 1470,
+        "black": 665
       }
     ]
   },
   "rnbqkb1r/pppppppp/5n2/8/2PP4/8/PP2PPPP/RNBQKBNR b KQkq -": {
-    "eco": "E60",
-    "name": "Şah-Hint Savunması (KID)",
+    "eco": "E00",
+    "name": "Hint Savunması Ana Hat (Indian Defense: Main Line)",
     "moves": [
-      {
-        "uci": "g7g6",
-        "san": "g6",
-        "white": 15650,
-        "draws": 14826,
-        "black": 10707
-      },
       {
         "uci": "e7e6",
         "san": "e6",
-        "white": 15650,
-        "draws": 15238,
-        "black": 10295
+        "white": 33540,
+        "draws": 36120,
+        "black": 16340
+      },
+      {
+        "uci": "g7g6",
+        "san": "g6",
+        "white": 26520,
+        "draws": 23868,
+        "black": 15912
       },
       {
         "uci": "c7c5",
         "san": "c5",
-        "white": 14826,
-        "draws": 13590,
-        "black": 12767
+        "white": 8526,
+        "draws": 7674,
+        "black": 5100
+      },
+      {
+        "uci": "d7d6",
+        "san": "d6",
+        "white": 1976,
+        "draws": 1716,
+        "black": 1508
+      },
+      {
+        "uci": "e7e5",
+        "san": "e5",
+        "white": 1428,
+        "draws": 952,
+        "black": 1020
+      },
+      {
+        "uci": "b7b6",
+        "san": "b6",
+        "white": 648,
+        "draws": 648,
+        "black": 504
       }
     ]
   },
