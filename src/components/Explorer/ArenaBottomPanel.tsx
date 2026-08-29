@@ -265,6 +265,16 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
                     <span>Yükleniyor...</span>
                   </div>
+                ) : source === 'lichess' && !hasToken ? (
+                  <div className="py-4 px-2 text-center flex flex-col items-center gap-1.5 bg-zinc-950/40 rounded-lg border border-zinc-800/60">
+                    <span className="text-[11px] text-zinc-300 font-medium">Lichess DB Canlı Bağlantı Gerekli</span>
+                    <button
+                      onClick={() => setIsTokenModalOpen(true)}
+                      className="text-[10px] text-amber-400 font-bold hover:underline cursor-pointer"
+                    >
+                      🔑 API Token Ekle
+                    </button>
+                  </div>
                 ) : topHumanMoves.length === 0 ? (
                   <div className="py-5 text-center text-zinc-500 text-[11px] italic">
                     Kayıtlı usta maçı yok (Teori Dışı)
@@ -293,13 +303,21 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                           </div>
 
                           <div className="flex items-center gap-2 font-mono text-[10px]">
-                            <span className="text-zinc-400">{formatCount(m.totalGames)}</span>
-                            {/* Real Win % Pills */}
-                            <div className="flex items-center gap-1 text-[9px] font-bold">
-                              <span className="text-zinc-200" title="Beyaz Galibiyeti">⚪%{m.whitePercent.toFixed(0)}</span>
-                              <span className="text-zinc-400" title="Beraberlik">🔘%{m.drawsPercent.toFixed(0)}</span>
-                              <span className="text-zinc-500" title="Siyah Galibiyeti">⚫%{m.blackPercent.toFixed(0)}</span>
-                            </div>
+                            {m.totalGames > 0 ? (
+                              <>
+                                <span className="text-zinc-400">{formatCount(m.totalGames)}</span>
+                                {/* Real Win % Pills */}
+                                <div className="flex items-center gap-1 text-[9px] font-bold">
+                                  <span className="text-zinc-200" title="Beyaz Galibiyeti">⚪%{m.whitePercent.toFixed(0)}</span>
+                                  <span className="text-zinc-400" title="Beraberlik">🔘%{m.drawsPercent.toFixed(0)}</span>
+                                  <span className="text-zinc-500" title="Siyah Galibiyeti">⚫%{m.blackPercent.toFixed(0)}</span>
+                                </div>
+                              </>
+                            ) : (
+                              <span className="text-[9px] text-zinc-500 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded font-sans">
+                                Resmi Teori
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
@@ -384,53 +402,59 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
          ========================================================= */}
       {activeTab === 'theory' && (
         <div className="space-y-2">
-          {/* Lichess Token Guidance Notice */}
-          {source === 'lichess' && !hasToken && (
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-[11px] text-blue-300">
-              <span>💡 Canlı Lichess oyuncu verileri için API Token ekleyebilirsiniz. (Şu an çevrimdışı temel teori devrede)</span>
+          {/* Lichess Unauthenticated Connection State */}
+          {source === 'lichess' && !hasToken ? (
+            <div className="flex flex-col items-center justify-center py-8 px-4 text-center space-y-2.5 bg-zinc-900/40 rounded-xl border border-zinc-800/80">
+              <Users className="w-7 h-7 text-blue-400 opacity-90" />
+              <div className="space-y-0.5">
+                <div className="font-bold text-xs text-zinc-100">Lichess DB (Canlı Oyuncu Maçları)</div>
+                <p className="text-[11px] text-zinc-400 max-w-sm leading-relaxed">
+                  Lichess sunucularındaki milyonlarca çevrimiçi oyuncu maçını anlık sorgulamak için ücretsiz API Token bağlayabilirsiniz. Çevrimdışı kullanımda yerel resmi açılış kitabı için <strong>Büyükustalar</strong> sekmesini seçebilirsiniz.
+                </p>
+              </div>
               <button
                 onClick={() => setIsTokenModalOpen(true)}
-                className="text-amber-400 font-bold hover:underline ml-2 shrink-0 cursor-pointer text-[10px]"
+                className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs rounded-xl shadow-md transition cursor-pointer"
               >
-                Token Ekle
+                🔑 Lichess API Token Bağla
               </button>
             </div>
-          )}
+          ) : (
+            <>
+              {/* Opening ECO & Name Header */}
+              {data?.opening && (
+                <div className="bg-zinc-900/80 border border-amber-500/20 rounded-xl px-3 py-1.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+                      {data.opening.eco}
+                    </span>
+                    <span className="text-xs font-medium text-zinc-200 truncate max-w-[260px] md:max-w-md">
+                      {data.opening.name}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-zinc-500 font-mono">
+                    {data.totalGames > 0 ? `${formatCount(data.totalGames)} oyun` : 'Resmi Teori'}
+                  </span>
+                </div>
+              )}
 
-          {/* Opening ECO & Name Header */}
-          {data?.opening && data.totalGames > 0 && (
-            <div className="bg-zinc-900/80 border border-amber-500/20 rounded-xl px-3 py-1.5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
-                  {data.opening.eco}
-                </span>
-                <span className="text-xs font-medium text-zinc-200 truncate max-w-[260px] md:max-w-md">
-                  {data.opening.name}
-                </span>
-              </div>
-              <span className="text-[10px] text-zinc-500 font-mono">
-                {formatCount(data.totalGames)} oyun
-              </span>
-            </div>
-          )}
-
-          {/* Moves Table */}
-          <div className="overflow-y-auto max-h-[190px] pr-1 space-y-1">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-6 text-zinc-500 gap-1.5">
-                <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
-                <span className="text-xs">Açılış ağacı taranıyor...</span>
-              </div>
-            ) : error ? (
-              <div className="text-xs text-zinc-500 py-6 text-center italic">{error}</div>
-            ) : !data || data.moves.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-6 text-center text-xs text-zinc-500">
-                <span className="font-semibold text-zinc-400">Teori Dışı Konum (0 Oyun)</span>
-                <span className="text-[11px] text-zinc-600 mt-0.5">
-                  Seçili veritabanında bu pozisyonda oynanmış kayıtlı maç bulunmuyor.
-                </span>
-              </div>
-            ) : (
+              {/* Moves Table */}
+              <div className="overflow-y-auto max-h-[190px] pr-1 space-y-1">
+                {isLoading ? (
+                  <div className="flex flex-col items-center justify-center py-6 text-zinc-500 gap-1.5">
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                    <span className="text-xs">Açılış ağacı taranıyor...</span>
+                  </div>
+                ) : error ? (
+                  <div className="text-xs text-zinc-500 py-6 text-center italic">{error}</div>
+                ) : !data || data.moves.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-6 text-center text-xs text-zinc-500">
+                    <span className="font-semibold text-zinc-400">Teori Dışı Konum (0 Oyun)</span>
+                    <span className="text-[11px] text-zinc-600 mt-0.5">
+                      Seçili veritabanında bu pozisyonda oynanmış kayıtlı maç bulunmuyor.
+                    </span>
+                  </div>
+                ) : (
               data.moves.map((m) => {
                 const isSaved = savedSans.has(m.san);
                 return (
@@ -455,51 +479,62 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                       )}
                     </div>
 
-                    {/* Total Games Count */}
-                    <div className="text-[11px] text-zinc-400 font-mono text-right w-14">
-                      {formatCount(m.totalGames)}
-                    </div>
+                    {/* Total Games Count or Theory Badge */}
+                    {m.totalGames > 0 ? (
+                      <>
+                        <div className="text-[11px] text-zinc-400 font-mono text-right w-14">
+                          {formatCount(m.totalGames)}
+                        </div>
 
-                    {/* Win / Draw / Loss Bar with Exact Percentages */}
-                    <div className="flex items-center gap-1 w-44">
-                      <div className="flex-1 h-3.5 bg-zinc-950 rounded overflow-hidden flex text-[8px] font-bold">
-                        {/* White win % */}
-                        {m.whitePercent > 0 && (
-                          <div
-                            style={{ width: `${m.whitePercent}%` }}
-                            className="bg-zinc-200 text-zinc-950 flex items-center justify-center overflow-hidden"
-                            title={`Beyaz Kazanır: %${m.whitePercent.toFixed(0)}`}
-                          >
-                            {m.whitePercent >= 20 && `${m.whitePercent.toFixed(0)}%`}
+                        {/* Win / Draw / Loss Bar with Exact Percentages */}
+                        <div className="flex items-center gap-1 w-44">
+                          <div className="flex-1 h-3.5 bg-zinc-950 rounded overflow-hidden flex text-[8px] font-bold">
+                            {/* White win % */}
+                            {m.whitePercent > 0 && (
+                              <div
+                                style={{ width: `${m.whitePercent}%` }}
+                                className="bg-zinc-200 text-zinc-950 flex items-center justify-center overflow-hidden"
+                                title={`Beyaz Kazanır: %${m.whitePercent.toFixed(0)}`}
+                              >
+                                {m.whitePercent >= 20 && `${m.whitePercent.toFixed(0)}%`}
+                              </div>
+                            )}
+                            {/* Draw % */}
+                            {m.drawsPercent > 0 && (
+                              <div
+                                style={{ width: `${m.drawsPercent}%` }}
+                                className="bg-zinc-500 text-zinc-100 flex items-center justify-center overflow-hidden"
+                                title={`Beraberlik: %${m.drawsPercent.toFixed(0)}`}
+                              >
+                                {m.drawsPercent >= 20 && `${m.drawsPercent.toFixed(0)}%`}
+                              </div>
+                            )}
+                            {/* Black win % */}
+                            {m.blackPercent > 0 && (
+                              <div
+                                style={{ width: `${m.blackPercent}%` }}
+                                className="bg-zinc-900 border-l border-zinc-700 text-zinc-400 flex items-center justify-center overflow-hidden"
+                                title={`Siyah Kazanır: %${m.blackPercent.toFixed(0)}`}
+                              >
+                                {m.blackPercent >= 20 && `${m.blackPercent.toFixed(0)}%`}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {/* Draw % */}
-                        {m.drawsPercent > 0 && (
-                          <div
-                            style={{ width: `${m.drawsPercent}%` }}
-                            className="bg-zinc-500 text-zinc-100 flex items-center justify-center overflow-hidden"
-                            title={`Beraberlik: %${m.drawsPercent.toFixed(0)}`}
-                          >
-                            {m.drawsPercent >= 20 && `${m.drawsPercent.toFixed(0)}%`}
-                          </div>
-                        )}
-                        {/* Black win % */}
-                        {m.blackPercent > 0 && (
-                          <div
-                            style={{ width: `${m.blackPercent}%` }}
-                            className="bg-zinc-900 border-l border-zinc-700 text-zinc-400 flex items-center justify-center overflow-hidden"
-                            title={`Siyah Kazanır: %${m.blackPercent.toFixed(0)}`}
-                          >
-                            {m.blackPercent >= 20 && `${m.blackPercent.toFixed(0)}%`}
-                          </div>
-                        )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-zinc-400 bg-zinc-800/80 border border-zinc-700/60 px-2 py-0.5 rounded font-sans">
+                          Resmi Teori
+                        </span>
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
-              })
-            )}
-          </div>
+              }))}
+              </div>
+            </>
+          )}
         </div>
       )}
 

@@ -135,9 +135,9 @@ export async function fetchOpeningExplorer(
 
     return result;
   } catch (apiError) {
-    // Offline fallback: Use exact master games from ECO_BOOK without artificial scaling
+    // Offline fallback: Use exact master games from ECO_BOOK strictly for Masters DB
     const localEco = ECO_BOOK[normFen];
-    if (localEco) {
+    if (localEco && source === 'masters') {
       let totalPosWhite = 0;
       let totalPosDraws = 0;
       let totalPosBlack = 0;
@@ -158,7 +158,7 @@ export async function fetchOpeningExplorer(
           white,
           draws,
           black,
-          averageRating: source === 'masters' ? 2480 : 1950,
+          averageRating: 2480,
           whitePercent: total > 0 ? (white / total) * 100 : 0,
           drawsPercent: total > 0 ? (draws / total) * 100 : 0,
           blackPercent: total > 0 ? (black / total) * 100 : 0,
@@ -181,7 +181,7 @@ export async function fetchOpeningExplorer(
       return fallbackResult;
     }
 
-    // Truthful empty result for out-of-theory positions
+    // Truthful empty result for out-of-theory positions or unauthenticated live Lichess DB
     const emptyResult: ExplorerResult = {
       moves: [],
       opening: undefined,
