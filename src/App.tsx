@@ -14,6 +14,7 @@ import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { HubView } from './components/Hub/HubView';
 import { Header, type ActiveTab } from './components/Layout/Header';
 import { MobileNav } from './components/Layout/MobileNav';
+import { ArenaBottomPanel } from './components/Explorer/ArenaBottomPanel';
 import { Info } from 'lucide-react';
 
 export function App() {
@@ -138,6 +139,14 @@ export function App() {
                     canGoForward={currentChildren.length > 0}
                     canDelete={currentNodeId !== null}
                     fen={currentFen}
+                  />
+
+                  {/* Arena Bottom Panel: Duality & Opening Theory Explorer */}
+                  <ArenaBottomPanel
+                    fen={currentFen}
+                    currentChildren={currentChildren}
+                    evaluation={evaluation}
+                    onPlayMove={handleMove}
                   />
                 </div>
 

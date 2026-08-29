@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 @import "chessground/assets/chessground.base.css";
 @import "chessground/assets/chessground.cburnett.css";
 
@@ -15,45 +15,45 @@ body {
   transition: background 0.35s ease, color 0.25s ease;
 }
 
-/* 1. ESPRESSO & CREAM: Sıcak Viyana Satranç Kafe Lambası */
+/* 1. ESPRESSO & WALNUT: Sıcak Viyana Satranç Kafe Lambası (Kısılmış Mat Ton) */
 body.theme-colorhunt-espresso {
   background: 
-    radial-gradient(ellipse at 50% 20%, #f7f1e6 0%, #ece2d0 45%, #d9cbba 100%) !important;
+    radial-gradient(ellipse at 50% 20%, #f4ede1 0%, #ece3d4 45%, #d5c5b0 100%) !important;
   background-attachment: fixed !important;
 }
 
-/* 2. NORDIC SLATE & ICE: Ferah İskandinav Salonu Loş Gün Işığı */
+/* 2. NORDIC SLATE & ICE: Ferah İskandinav Salonu Loş Gün Işığı (Kısılmış Mat Buzul) */
 body.theme-colorhunt-nordic {
   background: 
-    radial-gradient(ellipse at 50% 20%, #eff4f8 0%, #e0e7ee 45%, #c8d3df 100%) !important;
+    radial-gradient(ellipse at 50% 20%, #ebf1f6 0%, #dfe7ed 45%, #c2d0dc 100%) !important;
   background-attachment: fixed !important;
 }
 
-/* 3. SAND & TERRACOTTA: Sıcak Akdeniz Güneşi ve Toprak */
+/* 3. SAND & TERRACOTTA: Sıcak Akdeniz Güneşi ve Toprak (Kısılmış Mat Kum) */
 body.theme-colorhunt-terracotta {
   background: 
-    radial-gradient(ellipse at 50% 20%, #f6ede0 0%, #ebdccb 45%, #d3bea8 100%) !important;
+    radial-gradient(ellipse at 50% 20%, #eee1d2 0%, #e4d3bf 45%, #cbaf96 100%) !important;
   background-attachment: fixed !important;
 }
 
-/* 4. MATCHA & FOREST: Doğal Loş Orman & Ahşap Işığı */
+/* 4. TOURNAMENT FOREST: Doğal Loş FIDE Turnuva Işığı (Açılmış Orman Derinliği) */
 body.theme-colorhunt-matcha {
   background: 
-    radial-gradient(ellipse at 50% 15%, #1d3326 0%, #131f18 55%, #090e0b 100%) !important;
+    radial-gradient(ellipse at 50% 15%, #223c2e 0%, #15241c 55%, #0d1712 100%) !important;
   background-attachment: fixed !important;
 }
 
-/* 5. MIDNIGHT INDIGO: Lüks Turnuva Salonu Spot Lambası */
+/* 5. MIDNIGHT INDIGO: Lüks Turnuva Salonu Spot Lambası (Açılmış Gece Mavisi) */
 body.theme-colorhunt-midnight {
   background: 
-    radial-gradient(ellipse at 50% 15%, #1e2d4a 0%, #0e172a 55%, #050811 100%) !important;
+    radial-gradient(ellipse at 50% 15%, #1e2c47 0%, #111827 55%, #0a0e17 100%) !important;
   background-attachment: fixed !important;
 }
 
-/* 6. CHARCOAL & PLATINUM: Klasik Büyükusta Odak Masası */
+/* 6. GRANDMASTER CHARCOAL: Klasik Büyükusta Odak Masası (Açılmış Antrasit) */
 body.theme-colorhunt-monochrome {
   background: 
-    radial-gradient(ellipse at 50% 15%, #252529 0%, #151518 55%, #0a0a0c 100%) !important;
+    radial-gradient(ellipse at 50% 15%, #27272e 0%, #18181b 55%, #0f0f12 100%) !important;
   background-attachment: fixed !important;
 }
 
@@ -62,10 +62,10 @@ body.theme-colorhunt-monochrome {
    ========================================================= */
 
 .cg-wrap {
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 
-    0 16px 40px -10px rgba(0, 0, 0, 0.45),
+    0 20px 48px -12px rgba(0, 0, 0, 0.48),
     0 0 0 1px rgba(255, 255, 255, 0.08);
   transition: box-shadow 0.3s ease;
 }
@@ -84,6 +84,14 @@ body.theme-colorhunt-monochrome {
 
 .cg-wrap piece {
   filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+}
+
+.cg-wrap square.last-move {
+  background-color: rgba(245, 158, 11, 0.28) !important;
+}
+
+.cg-wrap square.selected {
+  background-color: rgba(59, 130, 246, 0.35) !important;
 }
 
 /* =========================================================

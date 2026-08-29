@@ -1,4 +1,4 @@
-﻿import { db } from '../db/db';
+import { db } from '../db/db';
 import type { ExplorerResult, ExplorerSource, ExplorerMove } from '../types/explorer';
 import { normalizeFen } from '../utils/chessHelpers';
 import { ECO_BOOK } from '../data/ecoBook';
@@ -110,21 +110,17 @@ export async function fetchOpeningExplorer(
 
     return result;
   } catch (apiError) {
-    // Offline / 401 fallback
+    // Offline fallback: Use exact master games from ECO_BOOK without artificial scaling
     const localEco = ECO_BOOK[normFen];
-    if (localEco) {
-      // Scale games for Lichess vs Masters simulation if offline
-      const multiplier = source === 'lichess' ? 45 : 1;
-      const ratingAvg = source === 'lichess' ? 1950 : 2480;
-
+    if (localEco && source === 'masters') {
       let totalPosWhite = 0;
       let totalPosDraws = 0;
       let totalPosBlack = 0;
 
       const calculatedMoves: ExplorerMove[] = localEco.moves.map(m => {
-        const white = (m.white || 0) * multiplier;
-        const draws = (m.draws || 0) * (source === 'lichess' ? Math.round(multiplier * 0.6) : multiplier);
-        const black = (m.black || 0) * multiplier;
+        const white = m.white || 0;
+        const draws = m.draws || 0;
+        const black = m.black || 0;
         const total = white + draws + black;
 
         totalPosWhite += white;
@@ -137,7 +133,7 @@ export async function fetchOpeningExplorer(
           white,
           draws,
           black,
-          averageRating: ratingAvg,
+          averageRating: 2480,
           whitePercent: total > 0 ? (white / total) * 100 : 0,
           drawsPercent: total > 0 ? (draws / total) * 100 : 0,
           blackPercent: total > 0 ? (black / total) * 100 : 0,
