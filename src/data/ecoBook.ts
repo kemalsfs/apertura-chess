@@ -63,50 +63,50 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     ]
   },
   "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -": {
-    "eco": "B90",
-    "name": "Sicilya Savunması: Najdorf Varyantı",
+    "eco": "B00",
+    "name": "Şah Piyonu Açılışı (King's Pawn)",
     "moves": [
       {
         "uci": "c7c5",
         "san": "c5",
-        "white": 40364,
-        "draws": 37000,
-        "black": 34757
+        "white": 88400,
+        "draws": 75600,
+        "black": 64200
       },
       {
         "uci": "e7e5",
         "san": "e5",
-        "white": 40364,
-        "draws": 37000,
-        "black": 34757
+        "white": 74200,
+        "draws": 68100,
+        "black": 51400
       },
       {
         "uci": "e7e6",
         "san": "e6",
-        "white": 42606,
-        "draws": 41485,
-        "black": 28030
+        "white": 32100,
+        "draws": 28400,
+        "black": 23800
       },
       {
         "uci": "c7c6",
         "san": "c6",
-        "white": 42606,
-        "draws": 40364,
-        "black": 29151
+        "white": 24800,
+        "draws": 27200,
+        "black": 18600
       },
       {
         "uci": "d7d5",
         "san": "d5",
-        "white": 42606,
-        "draws": 41485,
-        "black": 28030
+        "white": 9800,
+        "draws": 7100,
+        "black": 6900
       },
       {
         "uci": "d7d6",
         "san": "d6",
-        "white": 42606,
-        "draws": 40364,
-        "black": 29151
+        "white": 8900,
+        "draws": 6800,
+        "black": 6100
       }
     ]
   },
@@ -3496,29 +3496,50 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq -": {
-    "eco": "D37",
-    "name": "Vezir Gambiti Kabul Edilmeyen (QGD)",
+    "eco": "A40",
+    "name": "Vezir Piyonu Açılışı (Queen's Pawn)",
     "moves": [
-      {
-        "uci": "d7d5",
-        "san": "d5",
-        "white": 42606,
-        "draws": 41485,
-        "black": 28030
-      },
       {
         "uci": "g8f6",
         "san": "Nf6",
-        "white": 42606,
-        "draws": 41485,
-        "black": 28030
+        "white": 94200,
+        "draws": 98600,
+        "black": 56400
+      },
+      {
+        "uci": "d7d5",
+        "san": "d5",
+        "white": 72300,
+        "draws": 76800,
+        "black": 45200
+      },
+      {
+        "uci": "e7e6",
+        "san": "e6",
+        "white": 13400,
+        "draws": 14800,
+        "black": 10200
       },
       {
         "uci": "f7f5",
         "san": "f5",
-        "white": 42606,
-        "draws": 40364,
-        "black": 29151
+        "white": 10500,
+        "draws": 7200,
+        "black": 7400
+      },
+      {
+        "uci": "g7g6",
+        "san": "g6",
+        "white": 7800,
+        "draws": 7400,
+        "black": 5100
+      },
+      {
+        "uci": "c7c5",
+        "san": "c5",
+        "white": 4200,
+        "draws": 3100,
+        "black": 3300
       }
     ]
   },
@@ -5591,15 +5612,43 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
     "moves": []
   },
   "rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq -": {
-    "eco": "A15",
+    "eco": "A10",
     "name": "İngiliz Açılışı (English)",
     "moves": [
       {
         "uci": "g8f6",
         "san": "Nf6",
-        "white": 42606,
-        "draws": 41485,
-        "black": 28030
+        "white": 34200,
+        "draws": 39800,
+        "black": 23100
+      },
+      {
+        "uci": "e7e5",
+        "san": "e5",
+        "white": 28400,
+        "draws": 26800,
+        "black": 19400
+      },
+      {
+        "uci": "c7c5",
+        "san": "c5",
+        "white": 14200,
+        "draws": 18900,
+        "black": 9800
+      },
+      {
+        "uci": "e7e6",
+        "san": "e6",
+        "white": 12100,
+        "draws": 14200,
+        "black": 7600
+      },
+      {
+        "uci": "c7c6",
+        "san": "c6",
+        "white": 6100,
+        "draws": 7200,
+        "black": 4300
       }
     ]
   },
@@ -5805,14 +5854,42 @@ export const ECO_BOOK: Record<string, EcoPosition> = {
   },
   "rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq -": {
     "eco": "A04",
-    "name": "Reti Açılışı",
+    "name": "Réti Açılışı (Zukertort Opening)",
     "moves": [
       {
         "uci": "d7d5",
         "san": "d5",
-        "white": 42606,
-        "draws": 41485,
-        "black": 28030
+        "white": 38200,
+        "draws": 42100,
+        "black": 22900
+      },
+      {
+        "uci": "g8f6",
+        "san": "Nf6",
+        "white": 35100,
+        "draws": 46200,
+        "black": 21800
+      },
+      {
+        "uci": "c7c5",
+        "san": "c5",
+        "white": 11400,
+        "draws": 12600,
+        "black": 8200
+      },
+      {
+        "uci": "g7g6",
+        "san": "g6",
+        "white": 6800,
+        "draws": 6900,
+        "black": 4700
+      },
+      {
+        "uci": "f7f5",
+        "san": "f5",
+        "white": 3900,
+        "draws": 2800,
+        "black": 2800
       }
     ]
   },

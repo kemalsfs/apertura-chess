@@ -1,5 +1,9 @@
-﻿import React, { useState, useEffect } from 'react';
-import { fetchOpeningExplorer } from '../../services/lichessExplorer';
+import React, { useState, useEffect } from 'react';
+import { 
+  fetchOpeningExplorer, 
+  getLichessToken, 
+  setLichessToken 
+} from '../../services/lichessExplorer';
 import type { ExplorerResult, ExplorerSource, EvaluationResult } from '../../types/explorer';
 import type { RepertoireNode } from '../../types/chess';
 import { 
@@ -13,7 +17,9 @@ import {
   Sparkles, 
   Check, 
   Plus, 
-  Loader2
+  Loader2,
+  KeyRound,
+  X
 } from 'lucide-react';
 import { parseUci } from '../../utils/chessHelpers';
 
@@ -35,6 +41,9 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
   const [data, setData] = useState<ExplorerResult | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
+  const [tokenInput, setTokenInput] = useState(() => getLichessToken());
+  const [hasToken, setHasToken] = useState(() => !!getLichessToken());
 
   // Fetch opening explorer data on FEN or source change
   useEffect(() => {
@@ -67,7 +76,13 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [fen, source]);
+  }, [fen, source, hasToken]);
+
+  const handleSaveToken = () => {
+    setLichessToken(tokenInput);
+    setHasToken(!!tokenInput.trim());
+    setIsTokenModalOpen(false);
+  };
 
   // Set of SAN moves already in user's active repertoire
   const savedSans = new Set(currentChildren.map(c => c.san));
@@ -151,8 +166,8 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
           </button>
         </div>
 
-        {/* Database Source Switcher (Only in Theory Tab) */}
-        {activeTab === 'theory' ? (
+        {/* Database Source Switcher & Token Status */}
+        <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-0.5 rounded-xl">
             <button
               onClick={() => setSource('masters')}
@@ -161,7 +176,7 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                   ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
-              title="Büyükusta Veritabanı (2400+ FIDE)"
+              title="Büyükusta Veritabanı (2400+ FIDE / ECO DAG)"
             >
               <Award className="w-3 h-3 text-amber-400" />
               <span>Büyükustalar</span>
@@ -180,14 +195,20 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
               <span>Lichess DB</span>
             </button>
           </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-zinc-500 flex items-center gap-1">
-              <Cpu className="w-3 h-3 text-emerald-400" />
-              <span>MultiPV=3</span>
-            </span>
-          </div>
-        )}
+
+          <button
+            onClick={() => setIsTokenModalOpen(true)}
+            className={`p-1.5 rounded-lg border transition cursor-pointer flex items-center gap-1 text-[10px] font-mono ${
+              hasToken
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+            }`}
+            title={hasToken ? 'Lichess API Token: Aktif' : 'Lichess API Token Ekle'}
+          >
+            <KeyRound className="w-3 h-3" />
+            <span className="hidden sm:inline">{hasToken ? 'API Açık' : 'Token'}</span>
+          </button>
+        </div>
       </div>
 
       {/* =========================================================
@@ -204,14 +225,14 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                   <span>⚡ Teori & Motor Ayrışması (Taktiksel Fırsat / Tuzak)</span>
                 </div>
                 <p className="text-zinc-300 text-[11px] leading-relaxed">
-                  İnsan ustalar çoğunlukla <strong className="text-amber-400 font-mono">{humanBest.san}</strong> oynuyor ({formatCount(humanBest.totalGames)} oyun, %{humanBest.whitePercent.toFixed(0)} B / %{humanBest.blackPercent.toFixed(0)} S), fakat Stockfish <strong className="text-emerald-400 font-mono">{engineBest.san || engineBest.uci}</strong> hamlesini ({formatScore(engineBest.value, engineBest.type)}) en üstün görüyor.
+                  İnsanlar çoğunlukla <strong className="text-amber-400 font-mono">{humanBest.san}</strong> oynuyor ({formatCount(humanBest.totalGames)} oyun, %{humanBest.whitePercent.toFixed(0)} B / %{humanBest.blackPercent.toFixed(0)} S), fakat Stockfish <strong className="text-emerald-400 font-mono">{engineBest.san || engineBest.uci}</strong> hamlesini ({formatScore(engineBest.value, engineBest.type)}) en üstün görüyor.
                 </p>
               </div>
             </div>
           ) : topHumanMoves.length > 0 && engineBest ? (
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2 flex items-center gap-2 text-[11px] text-emerald-300 shadow-xs">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span><strong>Mükemmel Uyum:</strong> Büyükustalar ve Stockfish aynı hamlede ({humanBest.san}) birleşiyor.</span>
+              <span><strong>Mükemmel Uyum:</strong> İnsan teorisi ve Stockfish aynı hamlede ({humanBest.san}) birleşiyor.</span>
             </div>
           ) : (
             <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-2 flex items-center gap-2 text-[11px] text-zinc-400">
@@ -222,15 +243,21 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
 
           {/* 2-Column Side-by-Side Comparison */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {/* Left: Top 3 Human Master Moves with Win Rates */}
+            {/* Left: Top 3 Human Moves with Win Rates */}
             <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-2.5 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between pb-1.5 border-b border-zinc-800/80 mb-2">
                   <div className="flex items-center gap-1.5 font-bold text-zinc-200 text-xs">
-                    <Users className="w-3.5 h-3.5 text-amber-400" />
+                    {source === 'masters' ? (
+                      <Award className="w-3.5 h-3.5 text-amber-400" />
+                    ) : (
+                      <Users className="w-3.5 h-3.5 text-blue-400" />
+                    )}
                     <span>En Popüler 3 İnsan Hamlesi</span>
                   </div>
-                  <span className="text-[9px] text-zinc-500 font-mono">Masters DB</span>
+                  <span className="text-[9px] text-zinc-400 font-mono font-bold">
+                    {source === 'masters' ? 'Masters DB' : 'Lichess DB'}
+                  </span>
                 </div>
 
                 {isLoading ? (
@@ -459,6 +486,75 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                 );
               })
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Lichess Personal API Token Configuration Modal */}
+      {isTokenModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-amber-400" />
+                <h3 className="font-bold text-sm text-zinc-100">Lichess API Token (2026+)</h3>
+              </div>
+              <button
+                onClick={() => setIsTokenModalOpen(false)}
+                className="p-1 text-zinc-400 hover:text-zinc-100 rounded-lg transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Lichess, 2026 yılından itibaren Açılış Gezgini istekleri için ücretsiz <strong>Personal API Token (lip_...)</strong> zorunluluğu getirdi. Token eklediğinizde hem Büyükustalar hem de Lichess Oyuncu veritabanı anlık olarak canlı Lichess sunucularından çekilir.
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-zinc-400">
+                Lichess Kişisel API Token:
+              </label>
+              <input
+                type="text"
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                placeholder="lip_XXXXXXXXXXXXXXXXXXXXXXXX"
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs font-mono text-zinc-100 focus:outline-none focus:border-amber-400"
+              />
+              <p className="text-[10px] text-zinc-500">
+                Token almak için: <a href="https://lichess.org/account/oauth/token" target="_blank" rel="noreferrer" className="text-amber-400 underline">lichess.org/account/oauth/token</a> adresinden ücretsiz bir token oluşturup buraya yapıştırabilirsiniz.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              {hasToken && (
+                <button
+                  onClick={() => {
+                    setTokenInput('');
+                    setLichessToken('');
+                    setHasToken(false);
+                  }}
+                  className="text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer"
+                >
+                  Token'ı Kaldır
+                </button>
+              )}
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  onClick={() => setIsTokenModalOpen(false)}
+                  className="px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                >
+                  Vazgeç
+                </button>
+                <button
+                  onClick={handleSaveToken}
+                  className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs rounded-xl shadow-md cursor-pointer transition"
+                >
+                  Kaydet & Uygula
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

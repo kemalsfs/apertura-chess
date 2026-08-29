@@ -6,6 +6,22 @@ import { ECO_BOOK } from '../data/ecoBook';
 // In-Memory Fast Cache separated by source
 const memoryCache = new Map<string, ExplorerResult>();
 
+export const LICHESS_TOKEN_KEY = 'apertura_lichess_token';
+
+export function getLichessToken(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(LICHESS_TOKEN_KEY) || '';
+}
+
+export function setLichessToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  if (token.trim()) {
+    localStorage.setItem(LICHESS_TOKEN_KEY, token.trim());
+  } else {
+    localStorage.removeItem(LICHESS_TOKEN_KEY);
+  }
+}
+
 export async function fetchOpeningExplorer(
   fen: string,
   source: ExplorerSource = 'masters',
@@ -51,9 +67,18 @@ export async function fetchOpeningExplorer(
 
   const url = `${baseUrl}?${params.toString()}`;
 
-  // 4. Fetch from Lichess Explorer
+  // 4. Prepare Headers with Bearer Token if available
+  const token = getLichessToken();
+  const headers: Record<string, string> = {
+    'Accept': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  // 5. Fetch from Lichess Explorer
   try {
-    const response = await fetch(url, { signal });
+    const response = await fetch(url, { signal, headers });
     if (!response.ok) {
       throw new Error(`Lichess Explorer API error: HTTP ${response.status}`);
     }
