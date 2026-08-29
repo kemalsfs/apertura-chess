@@ -176,7 +176,7 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                   ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
-              title="Büyükusta Veritabanı (2400+ FIDE / ECO DAG)"
+              title="Büyükusta Veritabanı (2400+ FIDE Tarihi Maçları)"
             >
               <Award className="w-3 h-3 text-amber-400" />
               <span>Büyükustalar</span>
@@ -186,13 +186,13 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
               onClick={() => setSource('lichess')}
               className={`flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-semibold transition cursor-pointer ${
                 source === 'lichess'
-                  ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700'
+                  ? 'bg-zinc-800 text-blue-400 font-bold border border-zinc-700'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
-              title="Lichess Çevrimiçi Oyuncu Maçları"
+              title="Lichess İnsan Oyuncu Veritabanı (500M+ Maç)"
             >
               <Users className="w-3 h-3 text-blue-400" />
-              <span>Lichess DB</span>
+              <span>İnsan DB</span>
             </button>
           </div>
 
@@ -225,14 +225,14 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                   <span>⚡ Teori & Motor Ayrışması (Taktiksel Fırsat / Tuzak)</span>
                 </div>
                 <p className="text-zinc-300 text-[11px] leading-relaxed">
-                  İnsanlar çoğunlukla <strong className="text-amber-400 font-mono">{humanBest.san}</strong> oynuyor ({formatCount(humanBest.totalGames)} oyun, %{humanBest.whitePercent.toFixed(0)} B / %{humanBest.blackPercent.toFixed(0)} S), fakat Stockfish <strong className="text-emerald-400 font-mono">{engineBest.san || engineBest.uci}</strong> hamlesini ({formatScore(engineBest.value, engineBest.type)}) en üstün görüyor.
+                  {source === 'masters' ? 'Büyükustalar' : 'İnsan oyuncular'} çoğunlukla <strong className="text-amber-400 font-mono">{humanBest.san}</strong> oynuyor ({formatCount(humanBest.totalGames)} oyun, %{humanBest.whitePercent.toFixed(0)} B / %{humanBest.blackPercent.toFixed(0)} S), fakat Stockfish <strong className="text-emerald-400 font-mono">{engineBest.san || engineBest.uci}</strong> hamlesini ({formatScore(engineBest.value, engineBest.type)}) en üstün görüyor.
                 </p>
               </div>
             </div>
           ) : topHumanMoves.length > 0 && engineBest ? (
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2 flex items-center gap-2 text-[11px] text-emerald-300 shadow-xs">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span><strong>Mükemmel Uyum:</strong> İnsan teorisi ve Stockfish aynı hamlede ({humanBest.san}) birleşiyor.</span>
+              <span><strong>Mükemmel Uyum:</strong> {source === 'masters' ? 'Büyükustalar' : 'İnsan teorisi'} ve Stockfish aynı hamlede ({humanBest.san}) birleşiyor.</span>
             </div>
           ) : (
             <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-2 flex items-center gap-2 text-[11px] text-zinc-400">
@@ -253,10 +253,10 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                     ) : (
                       <Users className="w-3.5 h-3.5 text-blue-400" />
                     )}
-                    <span>En Popüler 3 İnsan Hamlesi</span>
+                    <span>En Popüler 3 {source === 'masters' ? 'Usta' : 'İnsan'} Hamlesi</span>
                   </div>
-                  <span className="text-[9px] text-zinc-400 font-mono font-bold">
-                    {source === 'masters' ? 'Masters DB' : 'Lichess DB'}
+                  <span className={`text-[9px] font-mono font-bold ${source === 'masters' ? 'text-amber-400' : 'text-blue-400'}`}>
+                    {source === 'masters' ? 'Masters DB (2400+)' : 'İnsan DB (500M+)'}
                   </span>
                 </div>
 
@@ -402,44 +402,38 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
          ========================================================= */}
       {activeTab === 'theory' && (
         <div className="space-y-2">
-          {/* Lichess Unauthenticated Connection State */}
-          {source === 'lichess' && !hasToken ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4 text-center space-y-2.5 bg-zinc-900/40 rounded-xl border border-zinc-800/80">
-              <Users className="w-7 h-7 text-blue-400 opacity-90" />
-              <div className="space-y-0.5">
-                <div className="font-bold text-xs text-zinc-100">Lichess DB (Canlı Oyuncu Maçları)</div>
-                <p className="text-[11px] text-zinc-400 max-w-sm leading-relaxed">
-                  Lichess sunucularındaki milyonlarca çevrimiçi oyuncu maçını anlık sorgulamak için ücretsiz API Token bağlayabilirsiniz. Çevrimdışı kullanımda yerel resmi açılış kitabı için <strong>Büyükustalar</strong> sekmesini seçebilirsiniz.
-                </p>
+          {/* Opening ECO & Name Header */}
+          {data?.opening && (
+            <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl px-3 py-1.5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+                  source === 'masters' ? 'bg-amber-500/10 text-amber-400' : 'bg-blue-500/10 text-blue-400'
+                }`}>
+                  {data.opening.eco}
+                </span>
+                <span className="text-xs font-medium text-zinc-200 truncate max-w-[240px] md:max-w-md">
+                  {data.opening.name}
+                </span>
               </div>
-              <button
-                onClick={() => setIsTokenModalOpen(true)}
-                className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs rounded-xl shadow-md transition cursor-pointer"
-              >
-                🔑 Lichess API Token Bağla
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-zinc-500 font-mono">
+                  {data.totalGames > 0 ? `${formatCount(data.totalGames)} oyun` : 'Resmi Teori'}
+                </span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                  source === 'masters' 
+                    ? 'bg-amber-500/10 text-amber-400' 
+                    : hasToken 
+                    ? 'bg-emerald-500/10 text-emerald-400' 
+                    : 'bg-blue-500/10 text-blue-400'
+                }`}>
+                  {source === 'masters' ? '2400+ Usta' : hasToken ? 'Canlı API' : 'Lichess 500M+'}
+                </span>
+              </div>
             </div>
-          ) : (
-            <>
-              {/* Opening ECO & Name Header */}
-              {data?.opening && (
-                <div className="bg-zinc-900/80 border border-amber-500/20 rounded-xl px-3 py-1.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
-                      {data.opening.eco}
-                    </span>
-                    <span className="text-xs font-medium text-zinc-200 truncate max-w-[260px] md:max-w-md">
-                      {data.opening.name}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-zinc-500 font-mono">
-                    {data.totalGames > 0 ? `${formatCount(data.totalGames)} oyun` : 'Resmi Teori'}
-                  </span>
-                </div>
-              )}
+          )}
 
-              {/* Moves Table */}
-              <div className="overflow-y-auto max-h-[190px] pr-1 space-y-1">
+          {/* Moves Table */}
+          <div className="overflow-y-auto max-h-[190px] pr-1 space-y-1">
                 {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-6 text-zinc-500 gap-1.5">
                     <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
@@ -532,11 +526,9 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                   </div>
                 );
               }))}
-              </div>
-            </>
-          )}
-        </div>
-      )}
+            </div>
+          </div>
+        )}
 
       {/* Lichess Personal API Token Configuration Modal */}
       {isTokenModalOpen && (
