@@ -9,6 +9,7 @@ interface HeaderProps {
   onTabChange: (tab: ActiveTab) => void;
   currentThemeId: ThemeId;
   onSelectTheme: (id: ThemeId) => void;
+  onOpenOnboarding: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   onTabChange,
   currentThemeId,
   onSelectTheme,
+  onOpenOnboarding,
 }) => {
   const [isThemeOpen, setIsThemeOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -33,19 +35,23 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="bg-black/10 dark:bg-black/30 backdrop-blur-xl border-b border-black/5 dark:border-white/5 px-4 py-3 sticky top-0 z-40 transition-colors">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Brand */}
+        {/* Brand (Click to open Onboarding & Navigation Hub) */}
         <div
-          onClick={() => onTabChange('hub')}
-          className="flex items-center gap-3 cursor-pointer group"
+          onClick={onOpenOnboarding}
+          className="flex items-center gap-3 cursor-pointer group select-none"
+          title="Apertura v2.0 Rehberi & Hızlı Menü (Tıkla)"
         >
-          <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-lg group-hover:scale-105 transition">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-lg group-hover:scale-110 group-hover:bg-amber-500/30 transition shadow-inner">
             ♟
           </div>
           <div>
-            <h1 className="text-sm font-bold text-zinc-100 flex items-center gap-1.5">
-              Apertura <span className="text-amber-400 font-normal text-xs">v2.0</span>
+            <h1 className="text-sm font-bold text-zinc-100 flex items-center gap-1.5 group-hover:text-amber-400 transition">
+              Apertura <span className="text-amber-400 font-normal text-xs bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/30">v2.0</span>
             </h1>
-            <p className="text-[10px] text-zinc-500 font-mono">Chess Repertoire & Trainer</p>
+            <p className="text-[10px] text-zinc-500 font-mono flex items-center gap-1">
+              <span>Hızlı Menü & Rehber</span>
+              <span className="text-[9px] text-amber-500/70">✦</span>
+            </p>
           </div>
         </div>
 

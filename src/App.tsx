@@ -15,10 +15,12 @@ import { HubView } from './components/Hub/HubView';
 import { Header, type ActiveTab } from './components/Layout/Header';
 import { MobileNav } from './components/Layout/MobileNav';
 import { ArenaBottomPanel } from './components/Explorer/ArenaBottomPanel';
+import { OnboardingModal } from './components/Common/OnboardingModal';
 import { Info } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('hub');
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const { themeId, theme, setThemeId } = useTheme();
 
   const {
@@ -74,6 +76,7 @@ export function App() {
         onTabChange={setActiveTab}
         currentThemeId={themeId}
         onSelectTheme={setThemeId}
+        onOpenOnboarding={() => setIsOnboardingOpen(true)}
       />
 
       {/* Main Content */}
@@ -192,6 +195,19 @@ export function App() {
         {/* Tab 3: Game Analytics Mode */}
         {activeTab === 'analytics' && <AnalyticsView />}
       </main>
+
+      {/* Onboarding & Quick Hub Modal */}
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        onNavigateTab={setActiveTab}
+        onOpenTokenModal={() => {
+          setIsOnboardingOpen(false);
+          setActiveTab('repertoire');
+        }}
+        currentThemeId={themeId}
+        onSelectTheme={setThemeId}
+      />
 
       {/* Promotion Modal */}
       <PromotionModal
