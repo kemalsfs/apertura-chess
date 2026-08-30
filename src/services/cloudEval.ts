@@ -1,4 +1,5 @@
-﻿import type { EvaluationResult, EngineMoveOption } from '../types/explorer';
+import type { EvaluationResult, EngineMoveOption } from '../types/explorer';
+import { getLichessToken } from './lichessExplorer';
 
 const cloudEvalCache = new Map<string, EvaluationResult>();
 
@@ -13,7 +14,15 @@ export async function fetchCloudEval(
 
   try {
     const url = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=3`;
-    const response = await fetch(url, { signal });
+    const token = getLichessToken();
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, { headers, signal });
 
     if (!response.ok) {
       return null;

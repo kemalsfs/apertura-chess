@@ -19,6 +19,7 @@ import {
   Plus, 
   Loader2,
   KeyRound,
+  ExternalLink,
   X
 } from 'lucide-react';
 import { parseUci } from '../../utils/chessHelpers';
@@ -548,12 +549,32 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
             </div>
 
             <p className="text-xs text-zinc-300 leading-relaxed">
-              Lichess, 2026 yılından itibaren Açılış Gezgini istekleri için ücretsiz <strong>Personal API Token (lip_...)</strong> zorunluluğu getirdi. Token eklediğinizde hem Büyükustalar hem de Lichess Oyuncu veritabanı anlık olarak canlı Lichess sunucularından çekilir.
+              Lichess, 2026 yılından itibaren Açılış Gezgini ve Bulut Analiz istekleri için ücretsiz <strong>Personal API Token (lip_...)</strong> zorunluluğu getirdi. Token bağladığınızda hem Büyükustalar hem de Lichess Oyuncu veritabanı doğrudan <strong>5.5 Milyarlık Lichess sunucu kümesinden</strong> anlık çekilir.
             </p>
 
+            {/* Step 1: 1-Click Open Token Creator */}
+            <div className="bg-zinc-950/70 border border-zinc-800 rounded-xl p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-200">1. Adım: Token Oluşturun</span>
+                <a
+                  href="https://lichess.org/account/oauth/token/create?description=Apertura+Chess+Explorer"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] rounded-lg shadow-sm transition"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  <span>Token Sayfasını Aç</span>
+                </a>
+              </div>
+              <p className="text-[10px] text-zinc-400 leading-relaxed">
+                Açılan sayfada hiçbir kutucuğu işaretlemenize gerek yoktur (varsayılan okuma yetkisi yeterlidir). En alttaki mavi <strong>Oluştur (Submit)</strong> butonuna basıp çıkan <code className="text-amber-400 bg-zinc-900 px-1 rounded">lip_...</code> kodunu kopyalayın.
+              </p>
+            </div>
+
+            {/* Step 2: Paste Token */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-zinc-400">
-                Lichess Kişisel API Token:
+              <label className="text-[11px] font-bold text-zinc-300">
+                2. Adım: Token'ı Buraya Yapıştırın:
               </label>
               <input
                 type="text"
@@ -562,9 +583,6 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                 placeholder="lip_XXXXXXXXXXXXXXXXXXXXXXXX"
                 className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs font-mono text-zinc-100 focus:outline-none focus:border-amber-400"
               />
-              <p className="text-[10px] text-zinc-500">
-                Token almak için: <a href="https://lichess.org/account/oauth/token" target="_blank" rel="noreferrer" className="text-amber-400 underline">lichess.org/account/oauth/token</a> adresinden ücretsiz bir token oluşturup buraya yapıştırabilirsiniz.
-              </p>
             </div>
 
             <div className="flex items-center justify-between pt-2">
