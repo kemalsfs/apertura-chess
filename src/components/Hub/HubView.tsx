@@ -22,25 +22,34 @@ export const HubView: React.FC<HubViewProps> = ({
   onSelectRepertoire,
   onNavigateTab,
 }) => {
-  const whiteRep = repertoires.find(r => r.color === 'white');
-  const blackRep = repertoires.find(r => r.color === 'black');
+  const defaultWhiteRep = repertoires.find(r => r.color === 'white' && r.isDefault) 
+    || repertoires.find(r => r.color === 'white');
+  const defaultBlackRep = repertoires.find(r => r.color === 'black' && r.isDefault) 
+    || repertoires.find(r => r.color === 'black');
 
   const [whiteNodes, setWhiteNodes] = useState(0);
   const [blackNodes, setBlackNodes] = useState(0);
 
   useEffect(() => {
     async function loadCounts() {
-      if (whiteRep) {
-        const w = await db.nodes.where('repertoireId').equals(whiteRep.id).count();
+      const whiteIds = repertoires.filter(r => r.color === 'white').map(r => r.id);
+      const blackIds = repertoires.filter(r => r.color === 'black').map(r => r.id);
+
+      if (whiteIds.length > 0) {
+        const w = await db.nodes.where('repertoireId').anyOf(whiteIds).count();
         setWhiteNodes(w);
+      } else {
+        setWhiteNodes(0);
       }
-      if (blackRep) {
-        const b = await db.nodes.where('repertoireId').equals(blackRep.id).count();
+      if (blackIds.length > 0) {
+        const b = await db.nodes.where('repertoireId').anyOf(blackIds).count();
         setBlackNodes(b);
+      } else {
+        setBlackNodes(0);
       }
     }
     loadCounts();
-  }, [whiteRep, blackRep]);
+  }, [repertoires]);
 
   const totalNodes = whiteNodes + blackNodes;
 
@@ -67,7 +76,7 @@ export const HubView: React.FC<HubViewProps> = ({
             Açılış Antrenörü
           </h1>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Aktif hatırlama, repertuvar kütüphanesi ve maç analizi
+            Aktif hatırlama, varyant ağacı atlası ve maç analitiği
           </p>
         </div>
 
@@ -152,26 +161,31 @@ export const HubView: React.FC<HubViewProps> = ({
       {/* 3. Direct Repertoire Launchers (Clean Minimal List) */}
       <div className="space-y-3 pt-4 border-t border-zinc-800/40">
         <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-          Repertuvarlar & Çalışma Alanları
+          Açılış Ağaçları & Repertuvarlar
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* White Repertoire */}
           <button
             onClick={() => {
-              if (whiteRep) onSelectRepertoire(whiteRep.id);
-              onNavigateTab('repertoire');
+              if (defaultWhiteRep) onSelectRepertoire(defaultWhiteRep.id);
+              onNavigateTab('tree');
             }}
             className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/40 hover:bg-zinc-900/80 border border-zinc-800/50 hover:border-zinc-700 transition cursor-pointer text-left group"
           >
             <div className="flex items-center gap-3">
               <span className="w-3.5 h-3.5 rounded-full bg-zinc-100 border border-zinc-400 shrink-0" />
               <div>
-                <div className="font-semibold text-sm text-zinc-200 group-hover:text-amber-400 transition">
-                  Beyaz Repertuvarı
+                <div className="font-semibold text-sm text-zinc-200 group-hover:text-amber-400 transition flex items-center gap-2">
+                  <span>{defaultWhiteRep?.name || 'Beyaz Repertuvarı'}</span>
+                  {defaultWhiteRep?.isDefault && (
+                    <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.2 rounded">
+                      Varsayılan
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] text-zinc-400 font-mono">
-                  {whiteNodes} kayıtlı hamle • 1. e4 Hatları
+                  {whiteNodes} kayıtlı konum • Varyant Ağacını Aç
                 </div>
               </div>
             </div>
@@ -181,19 +195,24 @@ export const HubView: React.FC<HubViewProps> = ({
           {/* Black Repertoire */}
           <button
             onClick={() => {
-              if (blackRep) onSelectRepertoire(blackRep.id);
-              onNavigateTab('repertoire');
+              if (defaultBlackRep) onSelectRepertoire(defaultBlackRep.id);
+              onNavigateTab('tree');
             }}
             className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/40 hover:bg-zinc-900/80 border border-zinc-800/50 hover:border-zinc-700 transition cursor-pointer text-left group"
           >
             <div className="flex items-center gap-3">
               <span className="w-3.5 h-3.5 rounded-full bg-zinc-950 border border-zinc-600 shrink-0" />
               <div>
-                <div className="font-semibold text-sm text-zinc-200 group-hover:text-amber-400 transition">
-                  Siyah Repertuvarı
+                <div className="font-semibold text-sm text-zinc-200 group-hover:text-amber-400 transition flex items-center gap-2">
+                  <span>{defaultBlackRep?.name || 'Siyah Repertuvarı'}</span>
+                  {defaultBlackRep?.isDefault && (
+                    <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.2 rounded">
+                      Varsayılan
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] text-zinc-400 font-mono">
-                  {blackNodes} kayıtlı hamle • e4 / d4 Yanıtları
+                  {blackNodes} kayıtlı konum • Varyant Ağacını Aç
                 </div>
               </div>
             </div>

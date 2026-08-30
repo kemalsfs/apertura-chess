@@ -86,6 +86,14 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Sync incoming activeRepertoireId prop
+  React.useEffect(() => {
+    if (activeRepertoireId) {
+      setSelectedRepId(activeRepertoireId);
+      setSelectedNodeId(null);
+    }
+  }, [activeRepertoireId]);
+
   // Active Repertoire
   const currentRep = repertoires.find(r => r.id === selectedRepId) || repertoires[0];
   const currentRepId = currentRep ? currentRep.id : selectedRepId;
