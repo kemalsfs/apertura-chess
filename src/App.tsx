@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRepertoire } from './hooks/useRepertoire';
 import { useEvaluation } from './hooks/useEvaluation';
 import { useTheme } from './hooks/useTheme';
@@ -16,12 +16,26 @@ import { Header, type ActiveTab } from './components/Layout/Header';
 import { MobileNav } from './components/Layout/MobileNav';
 import { ArenaBottomPanel } from './components/Explorer/ArenaBottomPanel';
 import { OnboardingModal } from './components/Common/OnboardingModal';
+import { FirstTimeTourModal, FIRST_TIME_TOUR_KEY } from './components/Common/FirstTimeTourModal';
 import { Info } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('hub');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
   const { themeId, theme, setThemeId } = useTheme();
+
+  // Auto-launch Tour on very first visit
+  useEffect(() => {
+    try {
+      const hasSeen = localStorage.getItem(FIRST_TIME_TOUR_KEY);
+      if (!hasSeen) {
+        setIsTourOpen(true);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }, []);
 
   const {
     repertoires,
@@ -205,9 +219,18 @@ export function App() {
           setIsOnboardingOpen(false);
           setActiveTab('repertoire');
         }}
+        onRestartTour={() => {
+          setIsOnboardingOpen(false);
+          setIsTourOpen(true);
+        }}
         currentThemeId={themeId}
         onSelectTheme={setThemeId}
       />
+
+      {/* First-Time Interactive Tour Walkthrough */}
+      {isTourOpen && (
+        <FirstTimeTourModal onComplete={() => setIsTourOpen(false)} />
+      )}
 
       {/* Promotion Modal */}
       <PromotionModal
