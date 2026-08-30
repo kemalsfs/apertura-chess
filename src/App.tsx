@@ -7,7 +7,6 @@ import { BoardControls } from './components/Chessboard/BoardControls';
 import { EvalBar } from './components/Chessboard/EvalBar';
 import { PromotionModal } from './components/Chessboard/PromotionModal';
 import { RepertoireHeader } from './components/Repertoire/RepertoireHeader';
-import { TreeRoutingModal } from './components/Repertoire/TreeRoutingModal';
 import { CreateTreeModal } from './components/Repertoire/CreateTreeModal';
 import { MoveTree } from './components/Repertoire/MoveTree';
 import { MoveAnnotation } from './components/Repertoire/MoveAnnotation';
@@ -22,14 +21,12 @@ import { OnboardingModal } from './components/Common/OnboardingModal';
 import { FirstTimeTourModal, FIRST_TIME_TOUR_KEY } from './components/Common/FirstTimeTourModal';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db/db';
-import type { Repertoire } from './types/chess';
 import { Info } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('hub');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isTourOpen, setIsTourOpen] = useState(false);
-  const [routingPrompt, setRoutingPrompt] = useState<{ firstMoveSan: string; existingRepertoire: Repertoire } | null>(null);
   const [isCreateTreeModalOpen, setIsCreateTreeModalOpen] = useState(false);
   const { themeId, theme, setThemeId } = useTheme();
 
@@ -82,15 +79,9 @@ export function App() {
   // Fetch all nodes live for White and Black
   const allDbNodes = useLiveQuery(() => db.nodes.toArray(), []);
 
-  // Handle Save with Smart Auto-Routing
+  // Handle Save directly into active repertoire
   const handleSaveCurrentToRepertoire = useCallback(async () => {
-    const res = await saveCurrentToRepertoire();
-    if (res?.status === 'prompt_existing' && res.existingRepertoire && res.firstMoveSan) {
-      setRoutingPrompt({
-        firstMoveSan: res.firstMoveSan,
-        existingRepertoire: res.existingRepertoire,
-      });
-    }
+    await saveCurrentToRepertoire();
   }, [saveCurrentToRepertoire]);
 
   // Handle instant jump to Arena with active engine & DB
@@ -269,25 +260,6 @@ export function App() {
         {/* Tab 4: Game Analytics Mode */}
         {activeTab === 'analytics' && <AnalyticsView />}
       </main>
-
-      {/* Tree Routing Confirmation Modal */}
-      {routingPrompt && (
-        <TreeRoutingModal
-          isOpen={true}
-          firstMoveSan={routingPrompt.firstMoveSan}
-          existingRepertoire={routingPrompt.existingRepertoire}
-          onConfirmExisting={async () => {
-            await saveCurrentToRepertoire(routingPrompt.existingRepertoire.id);
-            setActiveRepertoireId(routingPrompt.existingRepertoire.id);
-            setRoutingPrompt(null);
-          }}
-          onCreateNew={() => {
-            setRoutingPrompt(null);
-            setIsCreateTreeModalOpen(true);
-          }}
-          onCancel={() => setRoutingPrompt(null)}
-        />
-      )}
 
       {/* Create Tree Modal */}
       <CreateTreeModal

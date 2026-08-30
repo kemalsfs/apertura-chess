@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Chess } from 'chess.js';
 import { db, initializeDatabase } from '../db/db';
 import type { Repertoire, RepertoireNode, MoveHistoryItem, RepertoireColor } from '../types/chess';
@@ -306,7 +306,7 @@ export function useRepertoire() {
     [historyIndex, boardHistory, activeRepertoireId]
   );
 
-  // Smart Repertoire Save with Root-Move Auto-Routing for White
+  // Save current board sequence directly to target / active repertoire DAG (allows multiple root moves in same tree)
   const saveCurrentToRepertoire = useCallback(
     async (targetRepIdOverride?: string): Promise<SaveRepertoireResult | null> => {
       if (historyIndex < 0 || boardHistory.length === 0) return null;
@@ -315,64 +315,7 @@ export function useRepertoire() {
       const targetRepId = targetRepIdOverride || activeRepertoireId;
       const activeRep = repertoires.find(r => r.id === targetRepId);
 
-      // If user is White and didn't explicitly specify targetRepIdOverride
-      if (!targetRepIdOverride && activeRep && activeRep.color === 'white') {
-        const firstMoveSan = firstStep.san; // e.g. "c4"
-
-        // Check active repertoire's existing root moves
-        const activeRootNodes = Array.from(nodes.values()).filter(n => n.parentId === null);
-
-        // If active repertoire already has nodes and its root move is DIFFERENT from this line's first move
-        if (activeRootNodes.length > 0 && activeRootNodes[0].san !== firstMoveSan) {
-          const otherWhiteReps = repertoires.filter(r => r.color === 'white' && r.id !== activeRep.id);
-          let matchingExistingRep: Repertoire | undefined = undefined;
-
-          for (const otherRep of otherWhiteReps) {
-            if (otherRep.name.toLowerCase().includes(firstMoveSan.toLowerCase())) {
-              matchingExistingRep = otherRep;
-              break;
-            }
-            const otherRoots = await db.nodes.where('repertoireId').equals(otherRep.id).toArray();
-            const rootNode = otherRoots.find(n => n.parentId === null);
-            if (rootNode && rootNode.san === firstMoveSan) {
-              matchingExistingRep = otherRep;
-              break;
-            }
-          }
-
-          if (matchingExistingRep) {
-            return {
-              status: 'prompt_existing',
-              repertoireId: matchingExistingRep.id,
-              repertoireName: matchingExistingRep.name,
-              firstMoveSan,
-              existingRepertoire: matchingExistingRep,
-            };
-          } else {
-            // No tree exists for 1. {firstMoveSan} yet -> Automatically create new White tree!
-            const newRepName = `Beyaz Repertuvarı (1. ${firstMoveSan})`;
-            const newRepId = await createRepertoire(
-              newRepName,
-              'white',
-              `1. ${firstMoveSan} ile başlayan açılış ağacı`,
-              false
-            );
-
-            await executeSaveToDAG(newRepId);
-            setActiveRepertoireId(newRepId);
-            setOrientation('white');
-
-            return {
-              status: 'created_new',
-              repertoireId: newRepId,
-              repertoireName: newRepName,
-              firstMoveSan,
-            };
-          }
-        }
-      }
-
-      // Standard save into target repertoire
+      // Standard save into target repertoire DAG
       await executeSaveToDAG(targetRepId);
       return {
         status: 'saved',
@@ -381,7 +324,7 @@ export function useRepertoire() {
         firstMoveSan: firstStep.san,
       };
     },
-    [historyIndex, boardHistory, activeRepertoireId, repertoires, nodes, createRepertoire, executeSaveToDAG]
+    [historyIndex, boardHistory, activeRepertoireId, repertoires, executeSaveToDAG]
   );
 
   // Navigate to a specific step index or root
