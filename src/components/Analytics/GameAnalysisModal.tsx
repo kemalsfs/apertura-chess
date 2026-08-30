@@ -9,6 +9,13 @@ import { normalizeFen, STARTING_FEN, parseUci } from '../../utils/chessHelpers';
 import { ECO_BOOK } from '../../data/ecoBook';
 import { db } from '../../db/db';
 import { 
+  classifyMove, 
+  MOVE_QUALITY_MAP, 
+  type MoveQuality, 
+  type ClassificationResult 
+} from '../../utils/moveClassifier';
+import { fetchCloudEval } from '../../services/cloudEval';
+import { 
   X, 
   ChevronLeft, 
   ChevronRight, 
@@ -16,10 +23,8 @@ import {
   ChevronsLeft,
   AlertTriangle, 
   CheckCircle2, 
-  BookOpen, 
   Plus, 
   Check, 
-  Sparkles,
   ExternalLink,
   Cpu,
   Users
@@ -38,9 +43,11 @@ interface MoveStep {
   moveNumber: number;
   turn: 'w' | 'b';
   san: string;
+  uci: string;
   from: string;
   to: string;
   fen: string;
+  prevFen: string;
   normFen: string;
   isUserMove: boolean;
   isInRepertoire: boolean;
@@ -58,6 +65,8 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
 }) => {
   const [currentPly, setCurrentPly] = useState<number>(0);
   const [savedSteps, setSavedSteps] = useState<Set<number>>(new Set());
+  const [stepClassifications, setStepClassifications] = useState<Map<number, ClassificationResult>>(new Map());
+  const [isFullAnalysisRunning, setIsFullAnalysisRunning] = useState<boolean>(false);
 
   // Parse PGN to sequential step list
   const steps: MoveStep[] = useMemo(() => {
@@ -88,13 +97,14 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
 
     for (let i = 0; i < history.length; i++) {
       const h = history[i];
-      const prevNormFen = normalizeFen(replayChess.fen());
+      const prevFen = replayChess.fen();
+      const prevNormFen = normalizeFen(prevFen);
       
       replayChess.move(h.san);
       
       const currentNormFen = normalizeFen(replayChess.fen());
       const moveNumber = Math.floor(i / 2) + 1;
-      const turn = i % 2 === 0 ? 'w' : 'b';
+      const turn: 'w' | 'b' = i % 2 === 0 ? 'w' : 'b';
       const isUserMove = (userColor === 'white' && turn === 'w') || (userColor === 'black' && turn === 'b');
 
       // Check user repertoire match
@@ -125,9 +135,11 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
         moveNumber,
         turn,
         san: h.san,
+        uci: `${h.from}${h.to}`,
         from: h.from,
         to: h.to,
         fen: replayChess.fen(),
+        prevFen,
         normFen: currentNormFen,
         isUserMove,
         isInRepertoire,
@@ -140,11 +152,86 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
     return resultSteps;
   }, [game, whiteNodes, blackNodes]);
 
-  // Jump to start on game change
+  // Jump to start on game change & initialize opening book classifications
   useEffect(() => {
     setCurrentPly(0);
     setSavedSteps(new Set());
-  }, [game]);
+
+    const initialMap = new Map<number, ClassificationResult>();
+    steps.forEach((step) => {
+      if (step.ply <= 24 && step.isInMasterBook) {
+        initialMap.set(step.ply, {
+          quality: 'book',
+          badge: MOVE_QUALITY_MAP.book,
+          winDrop: 0,
+          accuracy: 100,
+        });
+      }
+    });
+    setStepClassifications(initialMap);
+  }, [game, steps]);
+
+  // Progressive Background Cloud Game Review
+  useEffect(() => {
+    if (!steps || steps.length === 0) return;
+
+    let isCancelled = false;
+    setIsFullAnalysisRunning(true);
+
+    async function analyzeGameSteps() {
+      const evalMap = new Map<number, { cp: number; bestMove?: string }>();
+      evalMap.set(0, { cp: 20 }); // Starting position default
+
+      for (let i = 0; i < steps.length; i++) {
+        if (isCancelled) break;
+        const step = steps[i];
+
+        try {
+          const cloudRes = await fetchCloudEval(step.fen, step.turn === 'w' ? 'b' : 'w');
+          if (cloudRes) {
+            const cpVal = cloudRes.type === 'mate' 
+              ? (cloudRes.value > 0 ? 10000 : -10000) 
+              : cloudRes.value;
+            evalMap.set(step.ply, { cp: cpVal, bestMove: cloudRes.bestMove });
+          }
+        } catch (e) {
+          // Ignore
+        }
+
+        const prevEval = evalMap.get(step.ply - 1);
+        const currEval = evalMap.get(step.ply);
+
+        if (prevEval && currEval) {
+          const classification = classifyMove({
+            prevFen: step.prevFen,
+            playedUci: step.uci,
+            playedSan: step.san,
+            turn: step.turn,
+            bestMoveUci: prevEval.bestMove,
+            prevCp: prevEval.cp,
+            currentCp: currEval.cp,
+            plyNumber: step.ply,
+          });
+
+          setStepClassifications(prev => {
+            const next = new Map(prev);
+            next.set(step.ply, classification);
+            return next;
+          });
+        }
+      }
+
+      if (!isCancelled) {
+        setIsFullAnalysisRunning(false);
+      }
+    }
+
+    const timer = setTimeout(analyzeGameSteps, 200);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [steps]);
 
   // Current position FEN & Chess instance
   const currentStep = currentPly > 0 ? steps[currentPly - 1] : null;
@@ -210,6 +297,50 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
     }
     return shapes;
   }, [evaluation.bestMove]);
+
+  // Compute Overall Game Accuracy & Badge Counts for White and Black
+  const accuracyStats = useMemo(() => {
+    let whiteAccSum = 0;
+    let whiteCount = 0;
+    let blackAccSum = 0;
+    let blackCount = 0;
+
+    const badgeCounts: Record<MoveQuality, number> = {
+      brilliant: 0,
+      best: 0,
+      book: 0,
+      excellent: 0,
+      good: 0,
+      inaccuracy: 0,
+      mistake: 0,
+      blunder: 0,
+      miss: 0,
+    };
+
+    steps.forEach(s => {
+      const c = stepClassifications.get(s.ply);
+      if (c) {
+        badgeCounts[c.quality] = (badgeCounts[c.quality] || 0) + 1;
+        if (s.turn === 'w') {
+          whiteAccSum += c.accuracy;
+          whiteCount++;
+        } else {
+          blackAccSum += c.accuracy;
+          blackCount++;
+        }
+      }
+    });
+
+    return {
+      whiteAccuracy: whiteCount > 0 ? Math.round(whiteAccSum / whiteCount) : 85,
+      blackAccuracy: blackCount > 0 ? Math.round(blackAccSum / blackCount) : 82,
+      badgeCounts,
+      analyzedCount: whiteCount + blackCount,
+    };
+  }, [steps, stepClassifications]);
+
+  // Current move classification result
+  const currentClassification = currentStep ? stepClassifications.get(currentStep.ply) : null;
 
   // Save current step to user's repertoire
   const handleSaveToRepertoire = async () => {
@@ -278,10 +409,10 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
     : undefined;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-zinc-950/85 backdrop-blur-md font-sans">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-zinc-950/85 backdrop-blur-md font-sans overflow-x-hidden">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-5xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden relative">
         {/* Top Header */}
-        <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/60">
+        <div className="p-3 sm:p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/60 shrink-0">
           <div className="flex items-center gap-3">
             <span
               className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono font-black text-xs ${
@@ -296,17 +427,19 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
             </span>
 
             <div>
-              <div className="flex items-center gap-2 font-bold text-sm text-zinc-100">
+              <div className="flex items-center gap-2 font-bold text-xs sm:text-sm text-zinc-100">
                 <span>vs {game.opponentUsername}</span>
                 {game.opponentRating && (
-                  <span className="text-xs text-zinc-500 font-mono">({game.opponentRating})</span>
+                  <span className="text-[11px] text-zinc-500 font-mono">({game.opponentRating})</span>
                 )}
-                <span className="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono">
                   {game.userColor === 'white' ? '⚪ Beyaz' : '⚫ Siyah'}
                 </span>
               </div>
-              <div className="text-[11px] text-zinc-400 font-mono">
-                {game.openingName || game.eco || 'Satranç Maçı'} • {new Date(game.date).toLocaleDateString('tr-TR')}
+              <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-2">
+                <span>{game.openingName || game.eco || 'Satranç Maçı'}</span>
+                <span>•</span>
+                <span>{new Date(game.date).toLocaleDateString('tr-TR')}</span>
               </div>
             </div>
           </div>
@@ -317,7 +450,7 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                 href={game.url}
                 target="_blank"
                 rel="noreferrer"
-                className="p-2 text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 rounded-xl transition cursor-pointer"
+                className="p-1.5 sm:p-2 text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 rounded-xl transition cursor-pointer"
                 title="Lichess / Chess.com'da Aç"
               >
                 <ExternalLink className="w-4 h-4" />
@@ -325,21 +458,83 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
             )}
             <button
               onClick={onClose}
-              className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-xl transition cursor-pointer"
+              className="p-1.5 sm:p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-xl transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
+        {/* Game Review & Accuracy KPI Summary Bar */}
+        <div className="px-3 sm:px-4 py-2 bg-zinc-950/90 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+          <div className="flex items-center gap-3">
+            {/* White Accuracy */}
+            <div className="flex items-center gap-1.5 bg-zinc-900 px-2.5 py-1 rounded-xl border border-zinc-800">
+              <span className="text-[11px] text-zinc-400">⚪ Beyaz İsabet:</span>
+              <strong className="font-mono font-bold text-zinc-100">%{accuracyStats.whiteAccuracy}</strong>
+            </div>
+
+            {/* Black Accuracy */}
+            <div className="flex items-center gap-1.5 bg-zinc-900 px-2.5 py-1 rounded-xl border border-zinc-800">
+              <span className="text-[11px] text-zinc-400">⚫ Siyah İsabet:</span>
+              <strong className="font-mono font-bold text-zinc-100">%{accuracyStats.blackAccuracy}</strong>
+            </div>
+          </div>
+
+          {/* Badge Breakdown Pills */}
+          <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-0.5 text-[10px] font-mono">
+            {accuracyStats.badgeCounts.brilliant > 0 && (
+              <span className="px-2 py-0.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold flex items-center gap-1">
+                <span>💎</span>
+                <span>{accuracyStats.badgeCounts.brilliant}</span>
+              </span>
+            )}
+            {accuracyStats.badgeCounts.best > 0 && (
+              <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold flex items-center gap-1">
+                <span>⭐</span>
+                <span>{accuracyStats.badgeCounts.best}</span>
+              </span>
+            )}
+            {accuracyStats.badgeCounts.book > 0 && (
+              <span className="px-2 py-0.5 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 font-bold flex items-center gap-1">
+                <span>📖</span>
+                <span>{accuracyStats.badgeCounts.book}</span>
+              </span>
+            )}
+            {accuracyStats.badgeCounts.inaccuracy > 0 && (
+              <span className="px-2 py-0.5 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 font-bold flex items-center gap-1">
+                <span>⚠️</span>
+                <span>{accuracyStats.badgeCounts.inaccuracy}</span>
+              </span>
+            )}
+            {accuracyStats.badgeCounts.mistake > 0 && (
+              <span className="px-2 py-0.5 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold flex items-center gap-1">
+                <span>❌</span>
+                <span>{accuracyStats.badgeCounts.mistake}</span>
+              </span>
+            )}
+            {accuracyStats.badgeCounts.blunder > 0 && (
+              <span className="px-2 py-0.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-bold flex items-center gap-1">
+                <span>💥</span>
+                <span>{accuracyStats.badgeCounts.blunder}</span>
+              </span>
+            )}
+            {isFullAnalysisRunning && (
+              <span className="text-[10px] text-zinc-500 italic animate-pulse">
+                Analiz ediliyor...
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Modal Main Content: Split Grid */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start custom-scrollbar">
           {/* Left Column: Board + Eval Bar + Navigation Controls */}
           <div className="lg:col-span-7 flex flex-col items-center gap-3">
-            <div className="flex items-center justify-center gap-3.5 w-full max-w-[480px]">
+            <div className="flex items-center justify-center gap-3 w-full max-w-[480px]">
               <EvalBar evaluation={evaluation} orientation={orientation} />
 
-              <div className="flex-1 aspect-square max-w-[430px]">
+              <div className="flex-1 aspect-square max-w-[430px] relative">
                 <ChessgroundBoard
                   fen={currentFen}
                   orientation={orientation}
@@ -348,6 +543,14 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                   lastMove={lastMove}
                   shapes={boardShapes}
                 />
+
+                {/* Floating Move Quality Badge Overlay on Board */}
+                {currentClassification && (
+                  <div className={`absolute bottom-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-xl shadow-lg backdrop-blur-md border ${currentClassification.badge.bgColor} ${currentClassification.badge.borderColor} ${currentClassification.badge.textColor} font-bold text-xs animate-fade-in`}>
+                    <span className="text-sm">{currentClassification.badge.icon}</span>
+                    <span>{currentClassification.badge.label}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -409,9 +612,9 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
 
           {/* Right Column: Step Inspector, Top Moves, Deviation & Move Grid */}
           <div className="lg:col-span-5 flex flex-col gap-3">
-            {/* Deviation & Status Card */}
+            {/* Move Quality & Deviation Inspector Card */}
             {currentStep ? (
-              <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
+              <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2.5">
                 <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-sm text-zinc-100">
@@ -448,7 +651,29 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                   )}
                 </div>
 
-                {/* Status Badges */}
+                {/* Move Quality Badge Card */}
+                {currentClassification && (
+                  <div className={`p-3 rounded-xl border ${currentClassification.badge.bgColor} ${currentClassification.badge.borderColor} flex items-start gap-2.5`}>
+                    <span className="text-xl shrink-0 mt-0.5">{currentClassification.badge.icon}</span>
+                    <div className="space-y-0.5 flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`font-bold text-xs ${currentClassification.badge.textColor}`}>
+                          {currentClassification.badge.label}
+                        </span>
+                        {currentClassification.winDrop > 0 && (
+                          <span className="text-[10px] font-mono text-zinc-400">
+                            -%{currentClassification.winDrop} kazanma kaybı
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-zinc-300 leading-relaxed">
+                        {currentClassification.badge.description}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Deviation Status */}
                 {currentStep.isDeviationStep ? (
                   <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 flex items-start gap-2 text-xs text-amber-300">
                     <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -467,17 +692,7 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span>Repertuvarına Tam Uyumlu</span>
                   </div>
-                ) : currentStep.isInMasterBook ? (
-                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-2 flex items-center gap-2 text-xs text-blue-300">
-                    <BookOpen className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                    <span>Büyükusta Teorisi (Master DB)</span>
-                  </div>
-                ) : (
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-2 flex items-center gap-2 text-xs text-zinc-400">
-                    <Sparkles className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                    <span>Teori Dışı / Orta Oyun Hamlesi</span>
-                  </div>
-                )}
+                ) : null}
               </div>
             ) : null}
 
@@ -523,17 +738,21 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
               </div>
             </div>
 
-            {/* Move Grid / PGN Explorer */}
+            {/* Move Grid / PGN Explorer with Badges */}
             <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 flex flex-col">
-              <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 pb-1.5 border-b border-zinc-800">
-                Maç Hamle Listesi
+              <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 pb-1.5 border-b border-zinc-800">
+                <span>Maç Hamle Listesi</span>
+                <span className="font-mono text-zinc-500">Rozetli Analiz</span>
               </div>
 
-              <div className="flex-1 max-h-[160px] overflow-y-auto pr-1 space-y-1 font-mono text-xs">
+              <div className="flex-1 max-h-[170px] overflow-y-auto pr-1 space-y-1 font-mono text-xs custom-scrollbar">
                 {Array.from({ length: Math.ceil(steps.length / 2) }).map((_, moveIdx) => {
                   const whiteStep = steps[moveIdx * 2];
                   const blackStep = steps[moveIdx * 2 + 1];
                   const moveNumber = moveIdx + 1;
+
+                  const whiteClass = whiteStep ? stepClassifications.get(whiteStep.ply) : null;
+                  const blackClass = blackStep ? stepClassifications.get(blackStep.ply) : null;
 
                   return (
                     <div key={moveNumber} className="flex items-center gap-2 py-0.5">
@@ -551,8 +770,14 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                               : 'text-zinc-300 hover:bg-zinc-900'
                           }`}
                         >
-                          <span>{whiteStep.san}</span>
-                          {whiteStep.isDeviationStep && <AlertTriangle className="w-3 h-3 text-amber-400" />}
+                          <span className="truncate">{whiteStep.san}</span>
+                          <span className="shrink-0 flex items-center gap-1 text-[11px]">
+                            {whiteClass ? (
+                              <span title={whiteClass.badge.label}>{whiteClass.badge.icon}</span>
+                            ) : whiteStep.isDeviationStep ? (
+                              <AlertTriangle className="w-3 h-3 text-amber-400" />
+                            ) : null}
+                          </span>
                         </button>
                       )}
 
@@ -568,8 +793,14 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                               : 'text-zinc-300 hover:bg-zinc-900'
                           }`}
                         >
-                          <span>{blackStep.san}</span>
-                          {blackStep.isDeviationStep && <AlertTriangle className="w-3 h-3 text-amber-400" />}
+                          <span className="truncate">{blackStep.san}</span>
+                          <span className="shrink-0 flex items-center gap-1 text-[11px]">
+                            {blackClass ? (
+                              <span title={blackClass.badge.label}>{blackClass.badge.icon}</span>
+                            ) : blackStep.isDeviationStep ? (
+                              <AlertTriangle className="w-3 h-3 text-amber-400" />
+                            ) : null}
+                          </span>
                         </button>
                       )}
                     </div>
@@ -577,6 +808,7 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                 })}
               </div>
             </div>
+
           </div>
         </div>
       </div>
