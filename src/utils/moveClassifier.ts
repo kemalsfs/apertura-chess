@@ -194,7 +194,7 @@ export interface ClassificationResult {
 /**
  * Classifies a played move based on Theory, Engine Evaluation Drop, and Tactical Sacrifice.
  */
-export function classifyMove(input: ClassifyInput): ClassificationResult {
+export function classifyMove(input: ClassifyInput): ClassificationResult | null {
   const normPrevFen = normalizeFen(input.prevFen);
   
   // 1. Check Opening Theory (Early book moves are always Book)
@@ -215,15 +215,9 @@ export function classifyMove(input: ClassifyInput): ClassificationResult {
     }
   }
 
-  // If no CP data available, default to good/best
+  // If no evaluation data is available yet, DO NOT FABRICATE DATA!
   if (input.prevCp === undefined || input.currentCp === undefined) {
-    const quality: MoveQuality = input.bestMoveUci === input.playedUci ? 'best' : 'good';
-    return {
-      quality,
-      badge: MOVE_QUALITY_MAP[quality],
-      winDrop: 0,
-      accuracy: 95,
-    };
+    return null;
   }
 
   // Normalize CP from player perspective

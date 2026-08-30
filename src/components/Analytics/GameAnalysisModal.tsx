@@ -14,8 +14,7 @@ import {
   type MoveQuality, 
   type ClassificationResult 
 } from '../../utils/moveClassifier';
-import { fetchCloudEval } from '../../services/cloudEval';
-import { stockfishEngine } from '../../services/stockfishEngine';
+import { GameReviewService } from '../../services/gameReviewService';
 import { 
   X, 
   ChevronLeft, 
@@ -172,55 +171,24 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
     setStepClassifications(initialMap);
   }, [game, steps]);
 
-  // Progressive Background Cloud + Local Stockfish Game Review
+  // Progressive Dedicated Game Review (Cloud + Local Stockfish Worker)
   useEffect(() => {
     if (!steps || steps.length === 0) return;
 
-    let isCancelled = false;
     setIsFullAnalysisRunning(true);
+    const reviewer = new GameReviewService();
+    const evalMap = new Map<number, { cp: number; bestMove?: string }>();
+    evalMap.set(0, { cp: 20 }); // Starting standard equal position
 
-    async function analyzeGameSteps() {
-      const evalMap = new Map<number, { cp: number; bestMove?: string }>();
-      evalMap.set(0, { cp: 20 }); // Starting position default
+    const positionsToAnalyze = [
+      ...steps.map(s => ({ ply: s.ply, fen: s.fen, turn: s.turn === 'w' ? 'b' as const : 'w' as const }))
+    ];
 
-      for (let i = 0; i < steps.length; i++) {
-        if (isCancelled) break;
-        const step = steps[i];
+    reviewer.analyzePositions(positionsToAnalyze, (point) => {
+      evalMap.set(point.ply, { cp: point.cp, bestMove: point.bestMove });
 
-        let evalData: { cp: number; bestMove?: string } | null = null;
-
-        // 1. Try instant Depth 50 Cloud Eval (Fast for opening and popular positions)
-        try {
-          const cloudRes = await fetchCloudEval(step.fen, step.turn === 'w' ? 'b' : 'w');
-          if (cloudRes) {
-            const cpVal = cloudRes.type === 'mate' 
-              ? (cloudRes.value > 0 ? 10000 : -10000) 
-              : cloudRes.value;
-            evalData = { cp: cpVal, bestMove: cloudRes.bestMove };
-          }
-        } catch (e) {
-          // Ignore
-        }
-
-        // 2. If Cloud Eval returned null (novel middle/endgame position), calculate with local Stockfish WASM!
-        if (!evalData && !isCancelled) {
-          try {
-            evalData = await stockfishEngine.evaluateAsync(
-              step.fen, 
-              step.turn === 'w' ? 'b' : 'w', 
-              8, 
-              250
-            );
-          } catch (e) {
-            // Ignore
-          }
-        }
-
-        if (evalData) {
-          evalMap.set(step.ply, evalData);
-        }
-
-        // Classify step if previous evaluation is known (or starting position)
+      const step = steps.find(s => s.ply === point.ply);
+      if (step) {
         const prevEval = evalMap.get(step.ply - 1) || { cp: 20 };
         const currEval = evalMap.get(step.ply);
 
@@ -236,23 +204,21 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
             plyNumber: step.ply,
           });
 
-          setStepClassifications(prev => {
-            const next = new Map(prev);
-            next.set(step.ply, classification);
-            return next;
-          });
+          if (classification) {
+            setStepClassifications(prev => {
+              const next = new Map(prev);
+              next.set(step.ply, classification);
+              return next;
+            });
+          }
         }
       }
+    }).finally(() => {
+      setIsFullAnalysisRunning(false);
+    });
 
-      if (!isCancelled) {
-        setIsFullAnalysisRunning(false);
-      }
-    }
-
-    const timer = setTimeout(analyzeGameSteps, 150);
     return () => {
-      isCancelled = true;
-      clearTimeout(timer);
+      reviewer.cancel();
     };
   }, [steps]);
 
