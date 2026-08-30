@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ActiveTab } from './Header';
-import { Compass, Layers, Dumbbell, BarChart3 } from 'lucide-react';
+import { Compass, Layers, GitBranch, Dumbbell, BarChart3 } from 'lucide-react';
 
 interface MobileNavProps {
   activeTab: ActiveTab;
@@ -9,10 +9,10 @@ interface MobileNavProps {
 
 export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) => {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 px-2 py-1.5 flex items-center justify-around">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 px-1 py-1.5 flex items-center justify-around">
       <button
         onClick={() => onTabChange('hub')}
-        className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-lg text-[10px] font-medium transition cursor-pointer ${
+        className={`flex flex-col items-center gap-1 py-1 px-1.5 rounded-lg text-[9px] font-medium transition cursor-pointer ${
           activeTab === 'hub' ? 'text-amber-400 font-bold' : 'text-zinc-500'
         }`}
       >
@@ -22,7 +22,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) 
 
       <button
         onClick={() => onTabChange('repertoire')}
-        className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-lg text-[10px] font-medium transition cursor-pointer ${
+        className={`flex flex-col items-center gap-1 py-1 px-1.5 rounded-lg text-[9px] font-medium transition cursor-pointer ${
           activeTab === 'repertoire' ? 'text-amber-400 font-bold' : 'text-zinc-500'
         }`}
       >
@@ -31,8 +31,18 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) 
       </button>
 
       <button
+        onClick={() => onTabChange('tree')}
+        className={`flex flex-col items-center gap-1 py-1 px-1.5 rounded-lg text-[9px] font-medium transition cursor-pointer ${
+          activeTab === 'tree' ? 'text-amber-400 font-bold' : 'text-zinc-500'
+        }`}
+      >
+        <GitBranch className="w-4 h-4" />
+        <span>Ağaç</span>
+      </button>
+
+      <button
         onClick={() => onTabChange('drill')}
-        className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-lg text-[10px] font-medium transition cursor-pointer ${
+        className={`flex flex-col items-center gap-1 py-1 px-1.5 rounded-lg text-[9px] font-medium transition cursor-pointer ${
           activeTab === 'drill' ? 'text-amber-400 font-bold' : 'text-zinc-500'
         }`}
       >
@@ -42,7 +52,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) 
 
       <button
         onClick={() => onTabChange('analytics')}
-        className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-lg text-[10px] font-medium transition cursor-pointer ${
+        className={`flex flex-col items-center gap-1 py-1 px-1.5 rounded-lg text-[9px] font-medium transition cursor-pointer ${
           activeTab === 'analytics' ? 'text-amber-400 font-bold' : 'text-zinc-500'
         }`}
       >

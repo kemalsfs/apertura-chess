@@ -1,10 +1,13 @@
-﻿import type { RepertoireNode, SRSData } from '../types/chess';
+import type { RepertoireNode, SRSData } from '../types/chess';
+import { ECO_BOOK } from '../data/ecoBook';
 
 export type DrillFilterType = 'due' | 'weak' | 'stale' | 'all';
 
 export interface LineMetadata {
   id: string;
   name: string;
+  eco?: string;
+  rootOpening: string;
   movesText: string;
   lastReviewed: number | null;
   reviewsCount: number;
@@ -93,6 +96,7 @@ export function getLineMetadata(line: RepertoireNode[]): LineMetadata {
     return {
       id: 'empty',
       name: 'Boş Varyant',
+      rootOpening: 'Boş',
       movesText: '',
       lastReviewed: null,
       reviewsCount: 0,
@@ -104,6 +108,9 @@ export function getLineMetadata(line: RepertoireNode[]): LineMetadata {
   }
 
   const lastNode = line[line.length - 1];
+  const firstNode = line[0];
+  const rootOpening = firstNode?.san ? `1. ${firstNode.san}` : '1. e4';
+
   const movesText = line.map((n, idx) => {
     const moveNum = Math.floor(idx / 2) + 1;
     if (idx % 2 === 0) {
@@ -111,6 +118,20 @@ export function getLineMetadata(line: RepertoireNode[]): LineMetadata {
     }
     return n.san;
   }).join(' ');
+
+  // Look for deepest known ECO opening name in the line
+  let openingName = firstNode?.san ? `${firstNode.san} Açılışı` : 'Açılış Varyantı';
+  let ecoCode: string | undefined = undefined;
+
+  for (let i = line.length - 1; i >= 0; i--) {
+    const node = line[i];
+    const ecoEntry = ECO_BOOK[node.normalizedFen];
+    if (ecoEntry && ecoEntry.name && ecoEntry.name !== 'Başlangıç Konumu') {
+      openingName = ecoEntry.name;
+      ecoCode = ecoEntry.eco;
+      break;
+    }
+  }
 
   // Calculate average / most recent SRS across nodes
   const nodesWithSrs = line.filter(n => n.srs && n.srs.reviewsCount > 0);
@@ -138,7 +159,9 @@ export function getLineMetadata(line: RepertoireNode[]): LineMetadata {
 
   return {
     id: lastNode.id,
-    name: line[0]?.san ? `${line[0].san} Varyantı` : 'Açılış Varyantı',
+    name: openingName,
+    eco: ecoCode,
+    rootOpening,
     movesText,
     lastReviewed,
     reviewsCount: totalReviews,

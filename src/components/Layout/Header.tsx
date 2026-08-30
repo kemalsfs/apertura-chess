@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Layers, Dumbbell, BarChart3, Palette, Check } from 'lucide-react';
+import { Compass, Layers, GitBranch, Dumbbell, BarChart3, Palette, Check } from 'lucide-react';
 import { THEMES, type ThemeId } from '../../types/theme';
 
-export type ActiveTab = 'hub' | 'repertoire' | 'drill' | 'analytics';
+export type ActiveTab = 'hub' | 'repertoire' | 'tree' | 'drill' | 'analytics';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -55,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* 4 Main Navigation Tabs */}
+        {/* 5 Main Navigation Tabs */}
         <nav className="hidden md:flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
           <button
             onClick={() => onTabChange('hub')}
@@ -79,6 +79,18 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Layers className="w-4 h-4" />
             Satranç Masası
+          </button>
+
+          <button
+            onClick={() => onTabChange('tree')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              activeTab === 'tree'
+                ? 'bg-zinc-800 text-amber-400 border border-zinc-700 shadow-xs'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <GitBranch className="w-4 h-4" />
+            Varyant Ağacı
           </button>
 
           <button

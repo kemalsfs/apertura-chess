@@ -15,6 +15,7 @@ interface DrillViewProps {
   activeRepertoireId: string;
   orientation: RepertoireColor;
   onExit: () => void;
+  onOpenVariantOnBoard?: (nodeId: string) => void;
 }
 
 export const DrillView: React.FC<DrillViewProps> = ({
@@ -22,6 +23,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
   activeRepertoireId,
   orientation,
   onExit,
+  onOpenVariantOnBoard,
 }) => {
   const [isVariantManagerOpen, setIsVariantManagerOpen] = useState(false);
 
@@ -153,6 +155,12 @@ export const DrillView: React.FC<DrillViewProps> = ({
         currentFilter={filter}
         onSelectFilter={changeFilter}
         onClose={() => setIsVariantManagerOpen(false)}
+        onOpenOnBoard={(nodeId) => {
+          setIsVariantManagerOpen(false);
+          if (onOpenVariantOnBoard) {
+            onOpenVariantOnBoard(nodeId);
+          }
+        }}
       />
 
       {/* End of Session Summary Modal */}

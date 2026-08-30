@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Repertoire } from '../../types/chess';
 import { db } from '../../db/db';
 import { 
@@ -14,7 +14,7 @@ interface HubViewProps {
   repertoires: Repertoire[];
   activeRepertoireId: string;
   onSelectRepertoire: (id: string) => void;
-  onNavigateTab: (tab: 'repertoire' | 'drill' | 'analytics') => void;
+  onNavigateTab: (tab: 'repertoire' | 'tree' | 'drill' | 'analytics') => void;
 }
 
 export const HubView: React.FC<HubViewProps> = ({
@@ -72,7 +72,14 @@ export const HubView: React.FC<HubViewProps> = ({
         </div>
 
         {/* Flat Minimal Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => onNavigateTab('tree')}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-zinc-800/80 hover:bg-zinc-800 text-amber-400 font-bold text-xs border border-amber-500/30 transition cursor-pointer"
+          >
+            <span>🌳 Varyant Ağacı</span>
+          </button>
+
           <button
             onClick={() => onNavigateTab('drill')}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs transition cursor-pointer shadow-sm"

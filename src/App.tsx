@@ -7,22 +7,30 @@ import { BoardControls } from './components/Chessboard/BoardControls';
 import { EvalBar } from './components/Chessboard/EvalBar';
 import { PromotionModal } from './components/Chessboard/PromotionModal';
 import { RepertoireHeader } from './components/Repertoire/RepertoireHeader';
+import { TreeRoutingModal } from './components/Repertoire/TreeRoutingModal';
+import { CreateTreeModal } from './components/Repertoire/CreateTreeModal';
 import { MoveTree } from './components/Repertoire/MoveTree';
 import { MoveAnnotation } from './components/Repertoire/MoveAnnotation';
 import { DrillView } from './components/Drill/DrillView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { HubView } from './components/Hub/HubView';
+import { RepertoireAtlasView } from './components/Atlas/RepertoireAtlasView';
 import { Header, type ActiveTab } from './components/Layout/Header';
 import { MobileNav } from './components/Layout/MobileNav';
 import { ArenaBottomPanel } from './components/Explorer/ArenaBottomPanel';
 import { OnboardingModal } from './components/Common/OnboardingModal';
 import { FirstTimeTourModal, FIRST_TIME_TOUR_KEY } from './components/Common/FirstTimeTourModal';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from './db/db';
+import type { Repertoire } from './types/chess';
 import { Info } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('hub');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isTourOpen, setIsTourOpen] = useState(false);
+  const [routingPrompt, setRoutingPrompt] = useState<{ firstMoveSan: string; existingRepertoire: Repertoire } | null>(null);
+  const [isCreateTreeModalOpen, setIsCreateTreeModalOpen] = useState(false);
   const { themeId, theme, setThemeId } = useTheme();
 
   // Auto-launch Tour on very first visit
@@ -42,6 +50,7 @@ export function App() {
     activeRepertoireId,
     setActiveRepertoireId,
     orientation,
+    setOrientation,
     flipBoard,
     currentNode,
     currentNodeId,
@@ -53,17 +62,45 @@ export function App() {
     currentChildren,
     playMove,
     saveCurrentToRepertoire,
+    createRepertoire,
+    setDefaultRepertoire,
+    deleteRepertoire,
     clearRepertoire,
     pendingPromotion,
     completePromotion,
     goToNode,
+    loadAndGoToNode,
     goToStart,
     goBack,
     goForward,
     saveComment,
     deleteNode,
+    refreshRepertoire,
     isLoading,
   } = useRepertoire();
+
+  // Fetch all nodes live for White and Black
+  const allDbNodes = useLiveQuery(() => db.nodes.toArray(), []);
+
+  // Handle Save with Smart Auto-Routing
+  const handleSaveCurrentToRepertoire = useCallback(async () => {
+    const res = await saveCurrentToRepertoire();
+    if (res?.status === 'prompt_existing' && res.existingRepertoire && res.firstMoveSan) {
+      setRoutingPrompt({
+        firstMoveSan: res.firstMoveSan,
+        existingRepertoire: res.existingRepertoire,
+      });
+    }
+  }, [saveCurrentToRepertoire]);
+
+  // Handle instant jump to Arena with active engine & DB
+  const handleOpenNodeInArena = useCallback(
+    async (nodeId: string, repertoireId?: string) => {
+      await loadAndGoToNode(nodeId, repertoireId);
+      setActiveTab('repertoire');
+    },
+    [loadAndGoToNode]
+  );
 
   // Live Stockfish Evaluation for Repertoire mode
   const evaluation = useEvaluation(currentFen, chess.turn());
@@ -114,6 +151,9 @@ export function App() {
               activeId={activeRepertoireId}
               onSelect={setActiveRepertoireId}
               onClearRepertoire={clearRepertoire}
+              onCreateTree={() => setIsCreateTreeModalOpen(true)}
+              onSetDefault={setDefaultRepertoire}
+              onDeleteTree={deleteRepertoire}
             />
 
             {isLoading ? (
@@ -148,7 +188,7 @@ export function App() {
                     onGoBack={goBack}
                     onGoForward={goForward}
                     onFlipBoard={flipBoard}
-                    onSaveToRepertoire={saveCurrentToRepertoire}
+                    onSaveToRepertoire={handleSaveCurrentToRepertoire}
                     onDeleteCurrentNode={currentNodeId ? () => deleteNode(currentNodeId) : undefined}
                     isSaved={isCurrentSaved}
                     canSave={history.length > 0}
@@ -196,19 +236,70 @@ export function App() {
           </div>
         )}
 
-        {/* Tab 2: Drill & Spaced Repetition Mode */}
+        {/* Tab 2: Variation & Repertoire Tree Atlas */}
+        {activeTab === 'tree' && (
+          <RepertoireAtlasView
+            repertoires={repertoires}
+            activeRepertoireId={activeRepertoireId}
+            allNodes={allDbNodes || []}
+            onSelectRepertoire={setActiveRepertoireId}
+            onOpenNodeOnBoard={handleOpenNodeInArena}
+            onStartDrillLine={() => {
+              setActiveTab('drill');
+            }}
+            onNavigateTab={setActiveTab}
+            onCreateRepertoire={createRepertoire}
+            onSetDefaultRepertoire={setDefaultRepertoire}
+            onDeleteRepertoire={deleteRepertoire}
+            onRefreshRepertoire={refreshRepertoire}
+          />
+        )}
+
+        {/* Tab 3: Drill & Spaced Repetition Mode */}
         {activeTab === 'drill' && (
           <DrillView
             repertoires={repertoires}
             activeRepertoireId={activeRepertoireId}
             orientation={orientation}
             onExit={() => setActiveTab('repertoire')}
+            onOpenVariantOnBoard={(nodeId) => handleOpenNodeInArena(nodeId, activeRepertoireId)}
           />
         )}
 
-        {/* Tab 3: Game Analytics Mode */}
+        {/* Tab 4: Game Analytics Mode */}
         {activeTab === 'analytics' && <AnalyticsView />}
       </main>
+
+      {/* Tree Routing Confirmation Modal */}
+      {routingPrompt && (
+        <TreeRoutingModal
+          isOpen={true}
+          firstMoveSan={routingPrompt.firstMoveSan}
+          existingRepertoire={routingPrompt.existingRepertoire}
+          onConfirmExisting={async () => {
+            await saveCurrentToRepertoire(routingPrompt.existingRepertoire.id);
+            setActiveRepertoireId(routingPrompt.existingRepertoire.id);
+            setRoutingPrompt(null);
+          }}
+          onCreateNew={() => {
+            setRoutingPrompt(null);
+            setIsCreateTreeModalOpen(true);
+          }}
+          onCancel={() => setRoutingPrompt(null)}
+        />
+      )}
+
+      {/* Create Tree Modal */}
+      <CreateTreeModal
+        isOpen={isCreateTreeModalOpen}
+        defaultColor={orientation}
+        onClose={() => setIsCreateTreeModalOpen(false)}
+        onCreate={async (name, color, desc, makeDefault) => {
+          const newId = await createRepertoire(name, color, desc, makeDefault);
+          setActiveRepertoireId(newId);
+          setOrientation(color);
+        }}
+      />
 
       {/* Onboarding & Quick Hub Modal */}
       <OnboardingModal

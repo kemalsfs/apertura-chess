@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { 
   Compass, 
   Layers, 
+  GitBranch, 
   Dumbbell, 
   BarChart3, 
   KeyRound, 
@@ -211,12 +212,33 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     </div>
                   </button>
 
-                  {/* 3. Hızlı Drill & Antrenman */}
+                  {/* 3. Varyant & Açılış Ağacı */}
+                  <button
+                    onClick={() => handleNavigate('tree')}
+                    className="group flex items-start gap-3 p-3.5 rounded-2xl bg-zinc-950/60 hover:bg-zinc-800/80 border border-zinc-800/80 hover:border-amber-500/50 transition cursor-pointer text-left shadow-xs"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 group-hover:scale-110 transition">
+                      <GitBranch className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-zinc-100 group-hover:text-amber-400 transition">
+                          Varyant Ağacı
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-zinc-600 group-hover:text-amber-400 transition" />
+                      </div>
+                      <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">
+                        Kayıtlı varyantları görselleştir, ara ve tek tıkla tahtada aç.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* 4. Hızlı Drill & Antrenman */}
                   <button
                     onClick={() => handleNavigate('drill')}
                     className="group flex items-start gap-3 p-3.5 rounded-2xl bg-zinc-950/60 hover:bg-zinc-800/80 border border-zinc-800/80 hover:border-amber-500/50 transition cursor-pointer text-left shadow-xs"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 group-hover:scale-110 transition">
+                    <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0 group-hover:scale-110 transition">
                       <Dumbbell className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -232,7 +254,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     </div>
                   </button>
 
-                  {/* 4. Maç Analitiği */}
+                  {/* 5. Maç Analitiği */}
                   <button
                     onClick={() => handleNavigate('analytics')}
                     className="group flex items-start gap-3 p-3.5 rounded-2xl bg-zinc-950/60 hover:bg-zinc-800/80 border border-zinc-800/80 hover:border-amber-500/50 transition cursor-pointer text-left shadow-xs"
