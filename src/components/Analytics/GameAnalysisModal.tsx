@@ -15,6 +15,7 @@ import {
   type ClassificationResult 
 } from '../../utils/moveClassifier';
 import { fetchCloudEval } from '../../services/cloudEval';
+import { stockfishEngine } from '../../services/stockfishEngine';
 import { 
   X, 
   ChevronLeft, 
@@ -171,7 +172,7 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
     setStepClassifications(initialMap);
   }, [game, steps]);
 
-  // Progressive Background Cloud Game Review
+  // Progressive Background Cloud + Local Stockfish Game Review
   useEffect(() => {
     if (!steps || steps.length === 0) return;
 
@@ -186,22 +187,44 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
         if (isCancelled) break;
         const step = steps[i];
 
+        let evalData: { cp: number; bestMove?: string } | null = null;
+
+        // 1. Try instant Depth 50 Cloud Eval (Fast for opening and popular positions)
         try {
           const cloudRes = await fetchCloudEval(step.fen, step.turn === 'w' ? 'b' : 'w');
           if (cloudRes) {
             const cpVal = cloudRes.type === 'mate' 
               ? (cloudRes.value > 0 ? 10000 : -10000) 
               : cloudRes.value;
-            evalMap.set(step.ply, { cp: cpVal, bestMove: cloudRes.bestMove });
+            evalData = { cp: cpVal, bestMove: cloudRes.bestMove };
           }
         } catch (e) {
           // Ignore
         }
 
-        const prevEval = evalMap.get(step.ply - 1);
+        // 2. If Cloud Eval returned null (novel middle/endgame position), calculate with local Stockfish WASM!
+        if (!evalData && !isCancelled) {
+          try {
+            evalData = await stockfishEngine.evaluateAsync(
+              step.fen, 
+              step.turn === 'w' ? 'b' : 'w', 
+              8, 
+              250
+            );
+          } catch (e) {
+            // Ignore
+          }
+        }
+
+        if (evalData) {
+          evalMap.set(step.ply, evalData);
+        }
+
+        // Classify step if previous evaluation is known (or starting position)
+        const prevEval = evalMap.get(step.ply - 1) || { cp: 20 };
         const currEval = evalMap.get(step.ply);
 
-        if (prevEval && currEval) {
+        if (currEval) {
           const classification = classifyMove({
             prevFen: step.prevFen,
             playedUci: step.uci,
@@ -226,7 +249,7 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
       }
     }
 
-    const timer = setTimeout(analyzeGameSteps, 200);
+    const timer = setTimeout(analyzeGameSteps, 150);
     return () => {
       isCancelled = true;
       clearTimeout(timer);
@@ -332,8 +355,8 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
     });
 
     return {
-      whiteAccuracy: whiteCount > 0 ? Math.round(whiteAccSum / whiteCount) : 85,
-      blackAccuracy: blackCount > 0 ? Math.round(blackAccSum / blackCount) : 82,
+      whiteAccuracy: whiteCount > 0 ? Math.round(whiteAccSum / whiteCount) : 0,
+      blackAccuracy: blackCount > 0 ? Math.round(blackAccSum / blackCount) : 0,
       badgeCounts,
       analyzedCount: whiteCount + blackCount,
     };

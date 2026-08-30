@@ -1,4 +1,4 @@
-﻿import type { EvaluationResult, EngineMoveOption } from '../types/explorer';
+import type { EvaluationResult, EngineMoveOption } from '../types/explorer';
 
 type EvalCallback = (evalResult: EvaluationResult) => void;
 
@@ -105,6 +105,39 @@ class StockfishService {
       this.worker.postMessage(`position fen ${fen}`);
       this.worker.postMessage('go depth 15');
     }
+  }
+
+  public evaluateAsync(
+    fen: string,
+    turn: 'w' | 'b',
+    maxDepth = 9,
+    timeoutMs = 400
+  ): Promise<{ cp: number; bestMove?: string } | null> {
+    return new Promise((resolve) => {
+      let resolved = false;
+      let bestCp = 0;
+      let bestMove: string | undefined = undefined;
+
+      const timer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          resolve({ cp: bestCp, bestMove });
+        }
+      }, timeoutMs);
+
+      this.evaluate(fen, turn, (res) => {
+        if (res.value !== undefined) {
+          bestCp = res.type === 'mate' ? (res.value > 0 ? 10000 : -10000) : res.value;
+          if (res.bestMove) bestMove = res.bestMove;
+        }
+
+        if (res.depth >= maxDepth && !resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          resolve({ cp: bestCp, bestMove });
+        }
+      });
+    });
   }
 
   public stop() {
