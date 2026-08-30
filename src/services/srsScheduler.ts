@@ -17,8 +17,23 @@ export interface LineMetadata {
   length: number;
 }
 
+export function recordActivityDate(timestamp: number = Date.now()): void {
+  try {
+    const d = new Date(timestamp);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const raw = localStorage.getItem('apertura_activity_dates');
+    const set = new Set<string>(raw ? JSON.parse(raw) : []);
+    set.add(dateStr);
+    localStorage.setItem('apertura_activity_dates', JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.warn('Could not record activity date:', e);
+  }
+}
+
 export function calculateNextSRS(currentSrs: SRSData | undefined, isCorrect: boolean): SRSData {
   const defaultEase = 2.5;
+  const now = Date.now();
+  recordActivityDate(now);
 
   if (isCorrect) {
     const streak = (currentSrs?.streak || 0) + 1;
@@ -33,14 +48,14 @@ export function calculateNextSRS(currentSrs: SRSData | undefined, isCorrect: boo
     }
 
     const easeFactor = Math.min(3.0, (currentSrs?.easeFactor || defaultEase) + 0.1);
-    const dueDate = Date.now() + interval * 24 * 60 * 60 * 1000;
+    const dueDate = now + interval * 24 * 60 * 60 * 1000;
 
     return {
       streak,
       interval,
       easeFactor,
       dueDate,
-      lastReviewed: Date.now(),
+      lastReviewed: now,
       reviewsCount: (currentSrs?.reviewsCount || 0) + 1,
     };
   } else {
@@ -51,8 +66,8 @@ export function calculateNextSRS(currentSrs: SRSData | undefined, isCorrect: boo
       streak: 0,
       interval: 1,
       easeFactor,
-      dueDate: Date.now(), // Re-queue immediately
-      lastReviewed: Date.now(),
+      dueDate: now, // Re-queue immediately
+      lastReviewed: now,
       reviewsCount: (currentSrs?.reviewsCount || 0) + 1,
     };
   }
