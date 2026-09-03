@@ -19,6 +19,7 @@ import { MobileNav } from './components/Layout/MobileNav';
 import { ArenaBottomPanel } from './components/Explorer/ArenaBottomPanel';
 import { OnboardingModal } from './components/Common/OnboardingModal';
 import { FirstTimeTourModal, FIRST_TIME_TOUR_KEY } from './components/Common/FirstTimeTourModal';
+import { PwaInstallPrompt } from './components/Common/PwaInstallPrompt';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db/db';
 import { Info } from 'lucide-react';
@@ -305,6 +306,9 @@ export function App() {
         onSelect={completePromotion}
         onCancel={() => {}}
       />
+
+      {/* PWA Add to Home Screen / Mobile Install Banner */}
+      <PwaInstallPrompt />
 
       {/* Mobile Bottom Navigation */}
       <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
