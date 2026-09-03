@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { Chessground } from 'chessground';
 import type { Api } from 'chessground/api';
 import type { Config } from 'chessground/config';
@@ -16,13 +16,35 @@ interface ChessgroundBoardProps {
   shapes?: DrawShape[];
 }
 
-export const ChessgroundBoard: React.FC<ChessgroundBoardProps> = ({
+const EMPTY_SHAPES: DrawShape[] = [];
+
+function areBoardPropsEqual(prev: ChessgroundBoardProps, next: ChessgroundBoardProps): boolean {
+  if (prev.fen !== next.fen) return false;
+  if (prev.orientation !== next.orientation) return false;
+  if (prev.onMove !== next.onMove) return false;
+  if (prev.lastMove?.[0] !== next.lastMove?.[0] || prev.lastMove?.[1] !== next.lastMove?.[1]) return false;
+  if ((prev.shapes?.length || 0) !== (next.shapes?.length || 0)) return false;
+  if (prev.shapes && next.shapes) {
+    for (let i = 0; i < prev.shapes.length; i++) {
+      if (
+        prev.shapes[i].orig !== next.shapes[i].orig ||
+        prev.shapes[i].dest !== next.shapes[i].dest ||
+        prev.shapes[i].brush !== next.shapes[i].brush
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+export const ChessgroundBoard: React.FC<ChessgroundBoardProps> = React.memo(({
   fen,
   orientation,
   chess,
   onMove,
   lastMove,
-  shapes = [],
+  shapes = EMPTY_SHAPES,
 }) => {
   const boardRef = useRef<HTMLDivElement>(null);
   const groundRef = useRef<Api | null>(null);
@@ -109,4 +131,4 @@ export const ChessgroundBoard: React.FC<ChessgroundBoardProps> = ({
       />
     </div>
   );
-};
+}, areBoardPropsEqual);

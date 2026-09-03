@@ -74,4 +74,18 @@ export async function initializeDatabase(): Promise<void> {
       },
     ]);
   }
+
+  // Automatic TDK normalization for legacy databases ("Repertoar" -> "Repertuvar")
+  try {
+    const allReps = await db.repertoires.toArray();
+    for (const rep of allReps) {
+      if (rep.name.includes('Repertoar')) {
+        await db.repertoires.update(rep.id, {
+          name: rep.name.replace(/Repertoar/g, 'Repertuvar'),
+        });
+      }
+    }
+  } catch (e) {
+    // Ignore
+  }
 }

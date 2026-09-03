@@ -105,6 +105,112 @@ body.theme-colorhunt-monochrome {
 }
 
 /* =========================================================
+   PERFECT ON-BOARD CHESSGROUND COORDINATES (Rank 1-8 & File a-h)
+   ========================================================= */
+
+.cg-wrap coords {
+  position: absolute;
+  display: flex;
+  pointer-events: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  z-index: 5;
+  user-select: none;
+}
+
+/* Ranks (1-8): Vertical column inside the 'a' file squares */
+.cg-wrap coords.ranks {
+  top: 0 !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  right: auto !important;
+  width: 12.5% !important; /* Exactly 1 square wide */
+  height: 100% !important;
+  flex-flow: column-reverse !important;
+}
+
+.cg-wrap coords.ranks.black {
+  flex-flow: column !important;
+}
+
+.cg-wrap coords.ranks coord {
+  transform: none !important;
+  display: flex !important;
+  align-items: flex-start !important; /* Top-left of square */
+  justify-content: flex-start !important;
+  padding-top: 3px !important;
+  padding-left: 4px !important;
+  flex: 1 1 auto !important;
+  height: 12.5% !important;
+}
+
+/* Files (a-h): Horizontal row along the bottom (1st rank squares) */
+.cg-wrap coords.files {
+  left: 0 !important;
+  bottom: 0 !important;
+  top: auto !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 12.5% !important; /* Exactly 1 square high */
+  flex-flow: row !important;
+}
+
+.cg-wrap coords.files.black {
+  flex-flow: row-reverse !important;
+}
+
+.cg-wrap coords.files coord {
+  transform: none !important;
+  display: flex !important;
+  align-items: flex-end !important; /* Bottom-right of square */
+  justify-content: flex-end !important;
+  padding-bottom: 3px !important;
+  padding-right: 4px !important;
+  flex: 1 1 auto !important;
+  width: 12.5% !important;
+}
+
+/* Dynamic contrast colors for coordinates on light vs dark squares */
+/* White orientation:
+   a1 is dark, a2 is light, a3 is dark, etc.
+   Files: a1 is dark, b1 is light, c1 is dark, etc.
+*/
+.cg-wrap coords.ranks:not(.black) coord:nth-child(odd),
+.cg-wrap coords.files:not(.black) coord:nth-child(odd) {
+  color: var(--board-light, #f0d9b5) !important;
+  opacity: 0.92;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+}
+
+.cg-wrap coords.ranks:not(.black) coord:nth-child(even),
+.cg-wrap coords.files:not(.black) coord:nth-child(even) {
+  color: var(--board-dark, #b58863) !important;
+  opacity: 0.92;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+/* Black orientation:
+   Bottom-left is h8 (dark square).
+   In coords.ranks.black (flex-flow: column): h1 is light (child 1), h2 dark (child 2), etc.
+   In coords.files.black (flex-flow: row-reverse): a8 is light (child 1), h8 dark (child 8).
+*/
+.cg-wrap coords.ranks.black coord:nth-child(odd),
+.cg-wrap coords.files.black coord:nth-child(odd) {
+  color: var(--board-dark, #b58863) !important;
+  opacity: 0.92;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.cg-wrap coords.ranks.black coord:nth-child(even),
+.cg-wrap coords.files.black coord:nth-child(even) {
+  color: var(--board-light, #f0d9b5) !important;
+  opacity: 0.92;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+}
+
+/* =========================================================
    AÇIK & KOYU TEMALARDA KART DERİNLİKLERİ
    ========================================================= */
 

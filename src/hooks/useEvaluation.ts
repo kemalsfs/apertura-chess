@@ -1,10 +1,10 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Chess } from 'chess.js';
 import { fetchCloudEval } from '../services/cloudEval';
 import { stockfishEngine } from '../services/stockfishEngine';
 import type { EvaluationResult } from '../types/explorer';
 
-export function useEvaluation(fen: string, turn: 'w' | 'b') {
+export function useEvaluation(fen: string, turn: 'w' | 'b', enabled: boolean = true) {
   const [evaluation, setEvaluation] = useState<EvaluationResult>({
     type: 'cp',
     value: 20, // +0.2 starting default
@@ -14,6 +14,17 @@ export function useEvaluation(fen: string, turn: 'w' | 'b') {
   });
 
   useEffect(() => {
+    if (!enabled) {
+      setEvaluation({
+        type: 'cp',
+        value: 0,
+        depth: 0,
+        source: 'none',
+        isLoading: false,
+      });
+      return;
+    }
+
     const controller = new AbortController();
     let isCancelled = false;
 
@@ -22,29 +33,34 @@ export function useEvaluation(fen: string, turn: 'w' | 'b') {
     // Helper to compute SAN for top UCI moves
     const enrichWithSan = (evalRes: EvaluationResult): EvaluationResult => {
       try {
+        if (!evalRes.topMoves || evalRes.topMoves.length === 0) return evalRes;
+        
+        // Check if SAN is already enriched
+        const needsSan = evalRes.topMoves.some(m => !m.san || m.san === m.uci);
+        if (!needsSan) return evalRes;
+
         const tempChess = new Chess(fen);
-        if (evalRes.topMoves && evalRes.topMoves.length > 0) {
-          const enrichedMoves = evalRes.topMoves.map(m => {
-            try {
-              const moveObj = tempChess.move({
-                from: m.from,
-                to: m.to,
-                promotion: m.uci.length > 4 ? m.uci[4] : undefined,
-              });
-              tempChess.undo();
-              return {
-                ...m,
-                san: moveObj ? moveObj.san : m.uci,
-              };
-            } catch (e) {
-              return m;
-            }
-          });
-          return {
-            ...evalRes,
-            topMoves: enrichedMoves,
-          };
-        }
+        const enrichedMoves = evalRes.topMoves.map(m => {
+          if (m.san && m.san !== m.uci) return m;
+          try {
+            const moveObj = tempChess.move({
+              from: m.from,
+              to: m.to,
+              promotion: m.uci.length > 4 ? m.uci[4] : undefined,
+            });
+            tempChess.undo();
+            return {
+              ...m,
+              san: moveObj ? moveObj.san : m.uci,
+            };
+          } catch (e) {
+            return m;
+          }
+        });
+        return {
+          ...evalRes,
+          topMoves: enrichedMoves,
+        };
       } catch (e) {
         // Ignore
       }
@@ -78,7 +94,8 @@ export function useEvaluation(fen: string, turn: 'w' | 'b') {
       });
     }
 
-    const timer = setTimeout(runEval, 60);
+    // 200ms debounce: allows Chessground 200ms piece animation to finish at full 60 FPS
+    const timer = setTimeout(runEval, 200);
 
     return () => {
       isCancelled = true;
@@ -86,7 +103,7 @@ export function useEvaluation(fen: string, turn: 'w' | 'b') {
       controller.abort();
       stockfishEngine.stop();
     };
-  }, [fen, turn]);
+  }, [fen, turn, enabled]);
 
   return evaluation;
 }

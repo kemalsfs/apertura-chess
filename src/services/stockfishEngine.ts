@@ -7,6 +7,10 @@ class StockfishService {
   private currentTurn: 'w' | 'b' = 'w';
   private callback: EvalCallback | null = null;
   private multiPvMap = new Map<number, EngineMoveOption>();
+  private pendingResult: EvaluationResult | null = null;
+  private throttleTimer: any = null;
+  private lastEmitTime = 0;
+  private readonly THROTTLE_MS = 120;
 
   constructor() {
     this.initWorker();
@@ -24,6 +28,8 @@ class StockfishService {
         // Parse UCI "info depth X ... multipv N ... score cp Y ... pv ..." or "score mate Z"
         if (line.startsWith('info') && line.includes('score') && line.includes('pv')) {
           this.parseUciInfo(line);
+        } else if (line.startsWith('bestmove')) {
+          this.flushPending();
         }
       };
 
@@ -32,6 +38,40 @@ class StockfishService {
       this.worker.postMessage('isready');
     } catch (err) {
       console.warn('Stockfish Web Worker initialization failed:', err);
+    }
+  }
+
+  private flushPending() {
+    if (this.throttleTimer) {
+      clearTimeout(this.throttleTimer);
+      this.throttleTimer = null;
+    }
+    if (this.pendingResult && this.callback) {
+      this.lastEmitTime = Date.now();
+      const res = this.pendingResult;
+      this.pendingResult = null;
+      this.callback(res);
+    }
+  }
+
+  private scheduleEmit(res: EvaluationResult, immediate = false) {
+    this.pendingResult = res;
+
+    if (immediate) {
+      this.flushPending();
+      return;
+    }
+
+    const now = Date.now();
+    const elapsed = now - this.lastEmitTime;
+
+    if (elapsed >= this.THROTTLE_MS) {
+      this.flushPending();
+    } else if (!this.throttleTimer) {
+      this.throttleTimer = setTimeout(() => {
+        this.throttleTimer = null;
+        this.flushPending();
+      }, this.THROTTLE_MS - elapsed);
     }
   }
 
@@ -79,7 +119,7 @@ class StockfishService {
     const topMoves = Array.from(this.multiPvMap.values()).sort((a, b) => a.rank - b.rank);
     const bestOption = this.multiPvMap.get(1);
 
-    this.callback({
+    const result: EvaluationResult = {
       type: bestOption?.type || scoreType,
       value: bestOption?.value ?? whitePerspectiveVal,
       depth,
@@ -87,13 +127,22 @@ class StockfishService {
       topMoves,
       source: 'local',
       isLoading: false,
-    });
+    };
+
+    const isMaxDepth = depth >= 15;
+    this.scheduleEmit(result, isMaxDepth);
   }
 
   public evaluate(fen: string, turn: 'w' | 'b', onEval: EvalCallback) {
     this.currentTurn = turn;
     this.callback = onEval;
     this.multiPvMap.clear();
+    this.pendingResult = null;
+    this.lastEmitTime = 0;
+    if (this.throttleTimer) {
+      clearTimeout(this.throttleTimer);
+      this.throttleTimer = null;
+    }
 
     if (!this.worker) {
       this.initWorker();
@@ -141,6 +190,11 @@ class StockfishService {
   }
 
   public stop() {
+    if (this.throttleTimer) {
+      clearTimeout(this.throttleTimer);
+      this.throttleTimer = null;
+    }
+    this.pendingResult = null;
     if (this.worker) {
       this.worker.postMessage('stop');
     }

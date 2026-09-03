@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRepertoire } from './hooks/useRepertoire';
 import { useEvaluation } from './hooks/useEvaluation';
 import { useTheme } from './hooks/useTheme';
@@ -22,6 +22,9 @@ import { FirstTimeTourModal, FIRST_TIME_TOUR_KEY } from './components/Common/Fir
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db/db';
 import { Info } from 'lucide-react';
+import type { DrawShape } from './types/chess';
+
+const EMPTY_ARROWS: DrawShape[] = [];
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('hub');
@@ -93,8 +96,8 @@ export function App() {
     [loadAndGoToNode]
   );
 
-  // Live Stockfish Evaluation for Repertoire mode
-  const evaluation = useEvaluation(currentFen, chess.turn());
+  // Live Stockfish Evaluation for Repertoire mode (only active when on Repertoire tab)
+  const evaluation = useEvaluation(currentFen, chess.turn(), activeTab === 'repertoire');
 
   const handleMove = useCallback(
     (orig: string, dest: string) => {
@@ -103,9 +106,9 @@ export function App() {
     [playMove]
   );
 
-  const lastMove: [string, string] | undefined = currentStep
-    ? [currentStep.from, currentStep.to]
-    : undefined;
+  const lastMove: [string, string] | undefined = useMemo(() => {
+    return currentStep ? [currentStep.from, currentStep.to] : undefined;
+  }, [currentStep?.from, currentStep?.to]);
 
   return (
     <div
@@ -168,7 +171,7 @@ export function App() {
                         chess={chess}
                         onMove={handleMove}
                         lastMove={lastMove}
-                        shapes={currentNode?.arrows || []}
+                        shapes={currentNode?.arrows || EMPTY_ARROWS}
                       />
                     </div>
                   </div>
