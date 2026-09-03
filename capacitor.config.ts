@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.theoriachess.app',
+  appId: 'com.aperturachess.app',
   appName: 'Apertura Chess',
   webDir: 'dist'
 };
