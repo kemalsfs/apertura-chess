@@ -1,0 +1,27 @@
+﻿{
+  "name": "Apertura — Satranç Açılış & Antrenman",
+  "short_name": "Apertura",
+  "description": "Minimalist, yerel öncelikli satranç açılış repertuvarı ve antrenman eğitmeni.",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#0f1117",
+  "orientation": "portrait",
+  "categories": ["games", "education"],
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
