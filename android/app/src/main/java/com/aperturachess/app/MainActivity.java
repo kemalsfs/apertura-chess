@@ -1,4 +1,4 @@
-﻿package com.aperturachess.app;
+package com.aperturachess.app;
 
 import com.getcapacitor.BridgeActivity;
 
