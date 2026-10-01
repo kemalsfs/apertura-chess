@@ -149,16 +149,6 @@ export function useRepertoire() {
       const now = Date.now();
       const newId = `rep_${color}_${Date.now()}`;
 
-      if (makeDefault) {
-        // Remove default flag from other repertoires of same color
-        const sameColorReps = repertoires.filter(r => r.color === color);
-        for (const r of sameColorReps) {
-          if (r.isDefault) {
-            await db.repertoires.update(r.id, { isDefault: false, updatedAt: now });
-          }
-        }
-      }
-
       const newRep: Repertoire = {
         id: newId,
         name,
@@ -169,11 +159,16 @@ export function useRepertoire() {
         updatedAt: now,
       };
 
-      await db.repertoires.add(newRep);
+      await db.transaction('rw', db.repertoires, async () => {
+        if (makeDefault) {
+          await db.repertoires.where('color').equals(color).modify({ isDefault: false, updatedAt: now });
+        }
+        await db.repertoires.add(newRep);
+      });
       await loadRepertoires();
       return newId;
     },
-    [repertoires, loadRepertoires]
+    [loadRepertoires]
   );
 
   // Set a repertoire as the default destination for its color
@@ -183,10 +178,12 @@ export function useRepertoire() {
       if (!target) return;
 
       const now = Date.now();
-      const sameColorReps = repertoires.filter(r => r.color === target.color);
-      for (const r of sameColorReps) {
-        await db.repertoires.update(r.id, { isDefault: r.id === id, updatedAt: now });
-      }
+      await db.transaction('rw', db.repertoires, async () => {
+        const sameColorReps = await db.repertoires.where('color').equals(target.color).toArray();
+        for (const rep of sameColorReps) {
+          await db.repertoires.update(rep.id, { isDefault: rep.id === id, updatedAt: now });
+        }
+      });
 
       await loadRepertoires();
     },
@@ -205,10 +202,17 @@ export function useRepertoire() {
         return false;
       }
 
-      // Delete all nodes in this repertoire
-      await db.nodes.where('repertoireId').equals(id).delete();
-      // Delete repertoire
-      await db.repertoires.delete(id);
+      await db.transaction('rw', db.nodes, db.repertoires, async () => {
+        await db.nodes.where('repertoireId').equals(id).delete();
+        await db.repertoires.delete(id);
+        if (target.isDefault) {
+          const remainingColor = await db.repertoires.where('color').equals(target.color).toArray();
+          const next = remainingColor.find(rep => rep.isDefault) || remainingColor[0];
+          if (next && !next.isDefault) {
+            await db.repertoires.update(next.id, { isDefault: true, updatedAt: Date.now() });
+          }
+        }
+      });
 
       const remaining = await loadRepertoires();
       const nextDefault = remaining.find(r => r.color === target.color && r.isDefault) 
@@ -239,64 +243,68 @@ export function useRepertoire() {
     async (targetRepId: string): Promise<void> => {
       if (historyIndex < 0) return;
 
-      const targetRepNodes = await db.nodes.where('repertoireId').equals(targetRepId).toArray();
-      const updatedNodes = new Map<string, RepertoireNode>();
-      for (const n of targetRepNodes) updatedNodes.set(n.id, n);
-
-      let parentId: string | null = null;
-      const updatedHistory = [...boardHistory];
-
-      for (let i = 0; i <= historyIndex; i++) {
-        const step = updatedHistory[i];
-
-        let existingNodeId: string | undefined = undefined;
-        for (const existingNode of updatedNodes.values()) {
-          if (existingNode.parentId === parentId && existingNode.san === step.san) {
-            existingNodeId = existingNode.id;
-            break;
-          }
+      const updatedHistory = boardHistory.map(step => ({ ...step }));
+      const updatedNodes = await db.transaction('rw', db.nodes, async () => {
+        const targetRepNodes = await db.nodes.where('repertoireId').equals(targetRepId).toArray();
+        const nextNodes = new Map<string, RepertoireNode>();
+        for (const node of targetRepNodes) {
+          nextNodes.set(node.id, { ...node, childrenIds: [...node.childrenIds] });
         }
 
-        if (existingNodeId && updatedNodes.has(existingNodeId)) {
-          parentId = existingNodeId;
-          step.savedNodeId = existingNodeId;
-        } else {
-          const normFen = normalizeFen(step.fen);
-          const newNodeId = `${targetRepId}_${Date.now()}_${step.san}_${i}`;
+        let parentId: string | null = null;
+        for (let i = 0; i <= historyIndex; i++) {
+          const step = updatedHistory[i];
 
-          const newNode: RepertoireNode = {
-            id: newNodeId,
-            repertoireId: targetRepId,
-            fen: step.fen,
-            normalizedFen: normFen,
-            san: step.san,
-            uci: step.uci,
-            from: step.from,
-            to: step.to,
-            promotion: step.promotion,
-            turn: step.turn,
-            moveNumber: Math.floor(i / 2) + 1,
-            parentId,
-            childrenIds: [],
-            createdAt: Date.now(),
-          };
-
-          await db.nodes.add(newNode);
-
-          if (parentId) {
-            const parent = updatedNodes.get(parentId);
-            if (parent && !parent.childrenIds.includes(newNodeId)) {
-              const newChildren = [...parent.childrenIds, newNodeId];
-              await db.nodes.update(parentId, { childrenIds: newChildren });
-              parent.childrenIds = newChildren;
+          let existingNodeId: string | undefined;
+          for (const existingNode of nextNodes.values()) {
+            if (existingNode.parentId === parentId && existingNode.san === step.san) {
+              existingNodeId = existingNode.id;
+              break;
             }
           }
 
-          updatedNodes.set(newNodeId, newNode);
-          step.savedNodeId = newNodeId;
-          parentId = newNodeId;
+          if (existingNodeId && nextNodes.has(existingNodeId)) {
+            parentId = existingNodeId;
+            step.savedNodeId = existingNodeId;
+          } else {
+            const normFen = normalizeFen(step.fen);
+            const newNodeId = `${targetRepId}_${Date.now()}_${step.san}_${i}`;
+
+            const newNode: RepertoireNode = {
+              id: newNodeId,
+              repertoireId: targetRepId,
+              fen: step.fen,
+              normalizedFen: normFen,
+              san: step.san,
+              uci: step.uci,
+              from: step.from,
+              to: step.to,
+              promotion: step.promotion,
+              turn: step.turn,
+              moveNumber: Math.floor(i / 2) + 1,
+              parentId,
+              childrenIds: [],
+              createdAt: Date.now(),
+            };
+
+            await db.nodes.add(newNode);
+
+            if (parentId) {
+              const parent = nextNodes.get(parentId);
+              if (parent && !parent.childrenIds.includes(newNodeId)) {
+                const newChildren = [...parent.childrenIds, newNodeId];
+                await db.nodes.update(parentId, { childrenIds: newChildren });
+                parent.childrenIds = newChildren;
+              }
+            }
+
+            nextNodes.set(newNodeId, newNode);
+            step.savedNodeId = newNodeId;
+            parentId = newNodeId;
+          }
         }
-      }
+        return nextNodes;
+      });
 
       if (targetRepId === activeRepertoireId) {
         setNodes(updatedNodes);
@@ -500,15 +508,16 @@ export function useRepertoire() {
       }
       collectDescendants(nodeId);
 
-      await db.nodes.bulkDelete(toDelete);
-
-      if (nodeToDelete.parentId) {
-        const parent = nodes.get(nodeToDelete.parentId);
-        if (parent) {
-          const updatedChildren = parent.childrenIds.filter(id => id !== nodeId);
-          await db.nodes.update(nodeToDelete.parentId, { childrenIds: updatedChildren });
+      await db.transaction('rw', db.nodes, async () => {
+        await db.nodes.bulkDelete(toDelete);
+        if (nodeToDelete.parentId) {
+          const parent = await db.nodes.get(nodeToDelete.parentId);
+          if (parent) {
+            const updatedChildren = parent.childrenIds.filter(id => id !== nodeId);
+            await db.nodes.update(nodeToDelete.parentId, { childrenIds: updatedChildren });
+          }
         }
-      }
+      });
 
       setNodes(prev => {
         const next = new Map(prev);
