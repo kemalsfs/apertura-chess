@@ -15,6 +15,9 @@ export interface SRSData {
   dueDate: number; // timestamp
   lastReviewed: number; // timestamp
   reviewsCount: number;
+  /** Recorded drill answers since attempt tracking was introduced. Older records omit these. */
+  correctAnswers?: number;
+  wrongAnswers?: number;
 }
 
 export interface RepertoireNode {

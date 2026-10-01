@@ -273,7 +273,7 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
       }
 
       if (statusFilter === 'due') return meta.isDue || meta.lastReviewed === null;
-      if (statusFilter === 'weak') return meta.status === 'learning' || meta.successRate < 70;
+      if (statusFilter === 'weak') return meta.status === 'learning' || (meta.successRate !== null && meta.successRate < 70);
       if (statusFilter === 'mastered') return meta.status === 'mastered';
       if (statusFilter === 'new') return meta.status === 'new';
 
@@ -949,7 +949,7 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-3 text-xs font-mono text-zinc-400">
-                      <span>Başarı: <strong className="text-zinc-200">%{meta.successRate}</strong></span>
+                      <span>Ölçülen başarı: <strong className="text-zinc-200">{meta.successRate === null ? 'Henüz ölçülmedi' : `%${meta.successRate} (${meta.measuredAnswersCount} deneme)`}</strong></span>
                       <span>•</span>
                       <span>{meta.length} hamle derinliği</span>
                     </div>

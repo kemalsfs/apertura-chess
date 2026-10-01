@@ -29,6 +29,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
 
   const {
     allExtractedLines,
+    skippedUntrainableLines,
     lines,
     lineIndex,
     currentFen,
@@ -74,9 +75,11 @@ export const DrillView: React.FC<DrillViewProps> = ({
         <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-amber-400">
           <Layers className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-zinc-100 mb-2">Repertuvarda Hamle Bulunamadı</h2>
+        <h2 className="text-lg font-bold text-zinc-100 mb-2">Çalışılabilir Varyant Bulunamadı</h2>
         <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
-          Drill antrenmanı yapabilmek için önce Açılış Ağacı sekmesinden tahta üzerinde varyantlar oluşturup kaydetmelisin.
+          {skippedUntrainableLines > 0
+            ? `${skippedUntrainableLines} kısa varyantta senin oynayacağın hamle yok. Daha uzun bir varyant kaydetmelisin.`
+            : 'Drill antrenmanı yapabilmek için önce Açılış Ağacı sekmesinden varyantlar oluşturup kaydetmelisin.'}
         </p>
         <button
           onClick={onExit}
@@ -84,6 +87,23 @@ export const DrillView: React.FC<DrillViewProps> = ({
         >
           <span>Açılış Ağacına Git</span>
           <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
+  if (lines.length === 0) {
+    return (
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center max-w-md mx-auto my-12 shadow-2xl">
+        <h2 className="text-lg font-bold text-zinc-100 mb-2">
+          {filter === 'due' ? 'Bugün tekrar yok' : 'Bu filtrede varyant yok'}
+        </h2>
+        <p className="text-xs text-zinc-400 mb-6">
+          {filter === 'due' ? 'Günün tekrarlarını tamamladın.' : 'Seçilen ölçüte uyan çalışılabilir varyant bulunamadı.'}
+        </p>
+        <button onClick={() => changeFilter('all')}
+          className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-xl text-xs cursor-pointer">
+          Tüm varyantları çalış
         </button>
       </div>
     );

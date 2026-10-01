@@ -3,6 +3,15 @@ import { ECO_BOOK } from '../data/ecoBook';
 
 export type DrillFilterType = 'due' | 'weak' | 'stale' | 'all';
 
+/** Lines with no player move cannot be tested in a drill. */
+export function firstPlayerStepIndex(orientation: 'white' | 'black'): number {
+  return orientation === 'white' ? 2 : 1;
+}
+
+export function isTrainableLine(line: RepertoireNode[], orientation: 'white' | 'black'): boolean {
+  return firstPlayerStepIndex(orientation) < line.length;
+}
+
 export interface LineMetadata {
   id: string;
   name: string;
@@ -11,7 +20,8 @@ export interface LineMetadata {
   movesText: string;
   lastReviewed: number | null;
   reviewsCount: number;
-  successRate: number; // 0 to 100
+  successRate: number | null; // Measured answers only; null when no answer was recorded
+  measuredAnswersCount: number;
   isDue: boolean;
   status: 'new' | 'learning' | 'review' | 'mastered';
   length: number;
@@ -57,6 +67,8 @@ export function calculateNextSRS(currentSrs: SRSData | undefined, isCorrect: boo
       dueDate,
       lastReviewed: now,
       reviewsCount: (currentSrs?.reviewsCount || 0) + 1,
+      correctAnswers: (currentSrs?.correctAnswers || 0) + 1,
+      wrongAnswers: currentSrs?.wrongAnswers || 0,
     };
   } else {
     // Failed recall
@@ -69,6 +81,8 @@ export function calculateNextSRS(currentSrs: SRSData | undefined, isCorrect: boo
       dueDate: now, // Re-queue immediately
       lastReviewed: now,
       reviewsCount: (currentSrs?.reviewsCount || 0) + 1,
+      correctAnswers: currentSrs?.correctAnswers || 0,
+      wrongAnswers: (currentSrs?.wrongAnswers || 0) + 1,
     };
   }
 }
@@ -115,7 +129,8 @@ export function getLineMetadata(line: RepertoireNode[]): LineMetadata {
       movesText: '',
       lastReviewed: null,
       reviewsCount: 0,
-      successRate: 100,
+      successRate: null,
+      measuredAnswersCount: 0,
       isDue: true,
       status: 'new',
       length: 0,
@@ -170,7 +185,13 @@ export function getLineMetadata(line: RepertoireNode[]): LineMetadata {
   else if (maxStreak >= 2) status = 'review';
   else status = 'learning';
 
-  const successRate = status === 'mastered' ? 95 : status === 'review' ? 80 : status === 'learning' ? 60 : 100;
+  // Legacy reviewsCount has no correct/wrong split. Never turn it into an invented percentage.
+  const measuredCorrect = line.reduce((sum, node) => sum + (node.srs?.correctAnswers || 0), 0);
+  const measuredWrong = line.reduce((sum, node) => sum + (node.srs?.wrongAnswers || 0), 0);
+  const measuredTotal = measuredCorrect + measuredWrong;
+  const successRate = measuredTotal > 0
+    ? Math.round((measuredCorrect / measuredTotal) * 100)
+    : null;
 
   return {
     id: lastNode.id,
@@ -181,6 +202,7 @@ export function getLineMetadata(line: RepertoireNode[]): LineMetadata {
     lastReviewed,
     reviewsCount: totalReviews,
     successRate,
+    measuredAnswersCount: measuredTotal,
     isDue,
     status,
     length: line.length,
@@ -209,7 +231,7 @@ export function filterRepertoireLines(
       // Success rate < 70% or in learning status
       return lines.filter(line => {
         const meta = getLineMetadata(line);
-        return meta.status === 'learning' || meta.successRate < 70;
+        return meta.status === 'learning' || (meta.successRate !== null && meta.successRate < 70);
       });
 
     case 'stale':

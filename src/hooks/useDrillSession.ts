@@ -7,6 +7,8 @@ import {
   extractRepertoireLines, 
   calculateNextSRS, 
   filterRepertoireLines,
+  isTrainableLine,
+  firstPlayerStepIndex,
   type DrillFilterType 
 } from '../services/srsScheduler';
 import { soundEffects } from '../services/soundEffects';
@@ -35,6 +37,7 @@ export function useDrillSession(
   initialFilter: DrillFilterType = 'due'
 ) {
   const [allExtractedLines, setAllExtractedLines] = useState<RepertoireNode[][]>([]);
+  const [skippedUntrainableLines, setSkippedUntrainableLines] = useState(0);
   const [filter, setFilter] = useState<DrillFilterType>(initialFilter);
   const [lines, setLines] = useState<RepertoireNode[][]>([]);
   const [lineIndex, setLineIndex] = useState<number>(0);
@@ -64,6 +67,7 @@ export function useDrillSession(
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const autoMoveTimerRef = useRef<any>(null);
+  const transitionTimerRef = useRef<any>(null);
 
   const activeLine = useMemo(() => {
     return lines[lineIndex] || [];
@@ -82,14 +86,15 @@ export function useDrillSession(
 
   // Setup specific training line
   const setupLine = useCallback(
-    (line: RepertoireNode[]) => {
+    (line: RepertoireNode[], preserveFailure = false) => {
       if (autoMoveTimerRef.current) {
         clearTimeout(autoMoveTimerRef.current);
       }
 
-      if (!line || line.length === 0) return;
+      if (!line || !isTrainableLine(line, orientation)) return;
+      setStepIndex(-1); // Intro moves are controlled by the setup timer, not the opponent effect.
       setAttemptsOnCurrentStep(0);
-      setHasFailedCurrentLine(false);
+      setHasFailedCurrentLine(preserveFailure);
 
       if (orientation === 'white') {
         // WHITE REPERTOIRE:
@@ -111,24 +116,13 @@ export function useDrillSession(
             soundEffects.playMove();
             setCurrentFen(blackFirstNode.fen);
             setLastMove([blackFirstNode.from, blackFirstNode.to]);
-            setStepIndex(2);
+            setStepIndex(firstPlayerStepIndex(orientation));
             setFeedback({
               status: 'your_turn',
               message: `Rakip ${blackFirstNode.san} oynadı. 2. hamleni yap!`,
               attemptsLeft: 3,
             });
           }, 500);
-        } else if (line.length === 1) {
-          const whiteFirstNode = line[0];
-          setCurrentFen(STARTING_FEN);
-          setLastMove(undefined);
-          setArrows([]);
-          setStepIndex(0);
-          setFeedback({
-            status: 'your_turn',
-            message: `İlk hamleni oyna: ${whiteFirstNode.san}`,
-            attemptsLeft: 3,
-          });
         }
       } else {
         // BLACK REPERTOIRE:
@@ -147,7 +141,7 @@ export function useDrillSession(
             soundEffects.playMove();
             setCurrentFen(whiteFirstNode.fen);
             setLastMove([whiteFirstNode.from, whiteFirstNode.to]);
-            setStepIndex(1);
+            setStepIndex(firstPlayerStepIndex(orientation));
             setFeedback({
               status: 'your_turn',
               message: `Beyaz ${whiteFirstNode.san} oynadı. Siyah ile cevabını ver!`,
@@ -170,14 +164,12 @@ export function useDrillSession(
         nodeMap.set(node.id, node);
       }
 
-      const allLines = extractRepertoireLines(nodeMap);
+      const extractedLines = extractRepertoireLines(nodeMap);
+      const allLines = extractedLines.filter(line => isTrainableLine(line, orientation));
+      setSkippedUntrainableLines(extractedLines.length - allLines.length);
       setAllExtractedLines(allLines);
 
-      // Apply initial filter (fallback to all if due is empty)
-      let activeLines = filterRepertoireLines(allLines, filter);
-      if (activeLines.length === 0 && allLines.length > 0) {
-        activeLines = allLines;
-      }
+      const activeLines = filterRepertoireLines(allLines, filter);
 
       setLines(activeLines);
       setLineIndex(0);
@@ -201,13 +193,14 @@ export function useDrillSession(
 
     return () => {
       if (autoMoveTimerRef.current) clearTimeout(autoMoveTimerRef.current);
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     };
-  }, [activeRepertoireId, filter, setupLine]);
+  }, [activeRepertoireId, filter, orientation, setupLine]);
 
   // Handle subsequent opponent auto-moves beyond ply 1
   useEffect(() => {
     if (isLoading || isSessionFinished || lines.length === 0) return;
-    if (stepIndex >= activeLine.length) return;
+    if (stepIndex < 0 || stepIndex >= activeLine.length) return;
 
     if (!isUserTurn) {
       setFeedback({
@@ -243,6 +236,7 @@ export function useDrillSession(
   // Advance to next line or trigger Next Round
   const advanceToNextLine = useCallback(
     (wasCurrentLineClean: boolean = true) => {
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
       // Record if failed
       let updatedFailedLines = [...failedLinesInRound];
       if (!wasCurrentLineClean || hasFailedCurrentLine) {
@@ -267,6 +261,7 @@ export function useDrillSession(
         if (updatedFailedLines.length > 0) {
           // Trigger next round with failed lines
           const nextRoundNum = currentRound + 1;
+          setStepIndex(-1);
           setCurrentRound(nextRoundNum);
           setLines(updatedFailedLines);
           setLineIndex(0);
@@ -284,7 +279,7 @@ export function useDrillSession(
             message: `🔥 ${nextRoundNum}. Tur Başlıyor: Hata yaptığın ${updatedFailedLines.length} varyantı pekiştirelim!`,
           });
 
-          setTimeout(() => {
+          transitionTimerRef.current = setTimeout(() => {
             setupLine(updatedFailedLines[0]);
           }, 1500);
         } else {
@@ -303,9 +298,10 @@ export function useDrillSession(
 
   // Retry / Rewind Current Line
   const retryCurrentLine = useCallback(() => {
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     if (activeLine && activeLine.length > 0) {
       setHasFailedCurrentLine(true);
-      setupLine(activeLine);
+      setupLine(activeLine, true);
     }
   }, [activeLine, setupLine]);
 
@@ -334,8 +330,19 @@ export function useDrillSession(
           soundEffects.playCorrect();
 
           // Update SRS in DB
-          const newSrs = calculateNextSRS(expectedNode.srs, true);
-          await db.nodes.update(expectedNode.id, { srs: newSrs });
+          const newSrs = await db.transaction('rw', db.nodes, async () => {
+            const latestNode = await db.nodes.get(expectedNode.id);
+            if (!latestNode) throw new Error(`Drill node missing: ${expectedNode.id}`);
+            const next = calculateNextSRS(latestNode.srs, true);
+            await db.nodes.update(expectedNode.id, { srs: next });
+            return next;
+          });
+          setAllExtractedLines(prev => prev.map(line => line.map(node =>
+            node.id === expectedNode.id ? { ...node, srs: newSrs } : node
+          )));
+          setLines(prev => prev.map(line => line.map(node =>
+            node.id === expectedNode.id ? { ...node, srs: newSrs } : node
+          )));
 
           // Update Stats
           setStats(prev => {
@@ -363,7 +370,7 @@ export function useDrillSession(
               comment: expectedNode.comment,
             });
 
-            setTimeout(() => {
+            transitionTimerRef.current = setTimeout(() => {
               advanceToNextLine(!hasFailedCurrentLine);
             }, 1200);
           } else {
@@ -387,8 +394,19 @@ export function useDrillSession(
           setAttemptsOnCurrentStep(nextAttempt);
 
           // Update SRS in DB (Failed)
-          const newSrs = calculateNextSRS(expectedNode.srs, false);
-          await db.nodes.update(expectedNode.id, { srs: newSrs });
+          const newSrs = await db.transaction('rw', db.nodes, async () => {
+            const latestNode = await db.nodes.get(expectedNode.id);
+            if (!latestNode) throw new Error(`Drill node missing: ${expectedNode.id}`);
+            const next = calculateNextSRS(latestNode.srs, false);
+            await db.nodes.update(expectedNode.id, { srs: next });
+            return next;
+          });
+          setAllExtractedLines(prev => prev.map(line => line.map(node =>
+            node.id === expectedNode.id ? { ...node, srs: newSrs } : node
+          )));
+          setLines(prev => prev.map(line => line.map(node =>
+            node.id === expectedNode.id ? { ...node, srs: newSrs } : node
+          )));
 
           setStats(prev => ({
             ...prev,
@@ -438,10 +456,10 @@ export function useDrillSession(
             });
 
             // Automatically play expected move after 1s and advance
-            setTimeout(() => {
+            transitionTimerRef.current = setTimeout(() => {
               setCurrentFen(expectedNode.fen);
               setLastMove([expectedNode.from, expectedNode.to]);
-              setTimeout(() => {
+              transitionTimerRef.current = setTimeout(() => {
                 advanceToNextLine(false);
               }, 1200);
             }, 800);
@@ -459,8 +477,8 @@ export function useDrillSession(
 
   // Restart entire session
   const restartSession = useCallback(() => {
-    let activeLines = filterRepertoireLines(allExtractedLines, filter);
-    if (activeLines.length === 0) activeLines = allExtractedLines;
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    const activeLines = filterRepertoireLines(allExtractedLines, filter);
 
     setLines(activeLines);
     setLineIndex(0);
@@ -475,7 +493,7 @@ export function useDrillSession(
       roundTotalLines: activeLines.length,
       roundPassedLines: 0,
     });
-    setIsSessionFinished(false);
+    setIsSessionFinished(activeLines.length === 0);
     if (activeLines.length > 0) {
       setupLine(activeLines[0]);
     }
@@ -491,6 +509,7 @@ export function useDrillSession(
 
   return {
     allExtractedLines,
+    skippedUntrainableLines,
     lines,
     lineIndex,
     stepIndex,

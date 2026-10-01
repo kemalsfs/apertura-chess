@@ -45,14 +45,14 @@ export const DrillVariantManagerModal: React.FC<DrillVariantManagerModalProps> =
   const threeDaysAgo = now - 3 * 24 * 60 * 60 * 1000;
 
   const dueCount = linesMeta.filter(m => m.meta.isDue || m.meta.lastReviewed === null).length;
-  const weakCount = linesMeta.filter(m => m.meta.status === 'learning' || m.meta.successRate < 70).length;
+  const weakCount = linesMeta.filter(m => m.meta.status === 'learning' || (m.meta.successRate !== null && m.meta.successRate < 70)).length;
   const staleCount = linesMeta.filter(m => m.meta.lastReviewed === null || m.meta.lastReviewed <= threeDaysAgo).length;
   const totalCount = linesMeta.length;
 
   // Filtered displayed lines
   const filteredLines = linesMeta.filter(({ meta }) => {
     if (currentFilter === 'due') return meta.isDue || meta.lastReviewed === null;
-    if (currentFilter === 'weak') return meta.status === 'learning' || meta.successRate < 70;
+    if (currentFilter === 'weak') return meta.status === 'learning' || (meta.successRate !== null && meta.successRate < 70);
     if (currentFilter === 'stale') return meta.lastReviewed === null || meta.lastReviewed <= threeDaysAgo;
     return true;
   });
@@ -156,7 +156,7 @@ export const DrillVariantManagerModal: React.FC<DrillVariantManagerModalProps> =
               </span>
               <span className="font-mono font-bold text-xs shrink-0">{weakCount}</span>
             </div>
-            <span className="text-[9px] sm:text-[10px] text-zinc-500 truncate">&lt; %70 Başarı</span>
+            <span className="text-[9px] sm:text-[10px] text-zinc-500 truncate">Öğrenilen veya &lt; %70</span>
           </button>
 
           {/* Filter 3: Stale */}
@@ -235,17 +235,19 @@ export const DrillVariantManagerModal: React.FC<DrillVariantManagerModalProps> =
                     </div>
 
                     <div className="text-right w-14 sm:w-16">
-                      <div className="text-[9px] sm:text-[10px] text-zinc-500">Başarı</div>
+                      <div className="text-[9px] sm:text-[10px] text-zinc-500">Ölçülen başarı</div>
                       <div
                         className={`text-[10px] sm:text-[11px] font-bold ${
-                          meta.successRate >= 80
+                          meta.successRate === null
+                            ? 'text-zinc-400'
+                            : meta.successRate >= 80
                             ? 'text-emerald-400'
                             : meta.successRate >= 60
                             ? 'text-amber-400'
                             : 'text-red-400'
                         }`}
                       >
-                        %{meta.successRate}
+                        {meta.successRate === null ? 'Henüz ölçülmedi' : `%${meta.successRate} (${meta.measuredAnswersCount})`}
                       </div>
                     </div>
                   </div>
