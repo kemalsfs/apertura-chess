@@ -32,6 +32,8 @@ export function App() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isTourOpen, setIsTourOpen] = useState(false);
   const [isCreateTreeModalOpen, setIsCreateTreeModalOpen] = useState(false);
+  const [tokenModalRequest, setTokenModalRequest] = useState(0);
+  const [selectedDrillLineId, setSelectedDrillLineId] = useState<string | null>(null);
   const { themeId, theme, setThemeId } = useTheme();
 
   // Auto-launch Tour on very first visit
@@ -69,6 +71,7 @@ export function App() {
     clearRepertoire,
     pendingPromotion,
     completePromotion,
+    cancelPromotion,
     goToNode,
     loadAndGoToNode,
     goToStart,
@@ -107,6 +110,11 @@ export function App() {
     [playMove]
   );
 
+  const handleTabChange = useCallback((tab: ActiveTab) => {
+    setSelectedDrillLineId(null);
+    setActiveTab(tab);
+  }, []);
+
   const lastMove: [string, string] | undefined = useMemo(() => {
     return currentStep ? [currentStep.from, currentStep.to] : undefined;
   }, [currentStep?.from, currentStep?.to]);
@@ -119,7 +127,7 @@ export function App() {
       {/* Top Header */}
       <Header
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         currentThemeId={themeId}
         onSelectTheme={setThemeId}
         onOpenOnboarding={() => setIsOnboardingOpen(true)}
@@ -195,6 +203,7 @@ export function App() {
 
                   {/* Arena Bottom Panel: Duality & Opening Theory Explorer */}
                   <ArenaBottomPanel
+                    tokenModalRequest={tokenModalRequest}
                     fen={currentFen}
                     currentChildren={currentChildren}
                     evaluation={evaluation}
@@ -239,10 +248,15 @@ export function App() {
             allNodes={allDbNodes || []}
             onSelectRepertoire={setActiveRepertoireId}
             onOpenNodeOnBoard={handleOpenNodeInArena}
-            onStartDrillLine={() => {
+            onStartDrillLine={(line) => {
+              if (line.length === 0) return;
+              setActiveRepertoireId(line[0].repertoireId);
+              const selectedRepertoire = repertoires.find(rep => rep.id === line[0].repertoireId);
+              if (selectedRepertoire) setOrientation(selectedRepertoire.color);
+              setSelectedDrillLineId(line[line.length - 1].id);
               setActiveTab('drill');
             }}
-            onNavigateTab={setActiveTab}
+            onNavigateTab={handleTabChange}
             onCreateRepertoire={createRepertoire}
             onSetDefaultRepertoire={setDefaultRepertoire}
             onDeleteRepertoire={deleteRepertoire}
@@ -256,7 +270,8 @@ export function App() {
             repertoires={repertoires}
             activeRepertoireId={activeRepertoireId}
             orientation={orientation}
-            onExit={() => setActiveTab('repertoire')}
+            selectedLineId={selectedDrillLineId}
+            onExit={() => handleTabChange('tree')}
             onOpenVariantOnBoard={(nodeId) => handleOpenNodeInArena(nodeId, activeRepertoireId)}
           />
         )}
@@ -281,10 +296,11 @@ export function App() {
       <OnboardingModal
         isOpen={isOnboardingOpen}
         onClose={() => setIsOnboardingOpen(false)}
-        onNavigateTab={setActiveTab}
+        onNavigateTab={handleTabChange}
         onOpenTokenModal={() => {
           setIsOnboardingOpen(false);
           setActiveTab('repertoire');
+          setTokenModalRequest(request => request + 1);
         }}
         onRestartTour={() => {
           setIsOnboardingOpen(false);
@@ -304,14 +320,14 @@ export function App() {
         isOpen={pendingPromotion !== null}
         color={orientation}
         onSelect={completePromotion}
-        onCancel={() => {}}
+        onCancel={cancelPromotion}
       />
 
       {/* PWA Add to Home Screen / Mobile Install Banner */}
       <PwaInstallPrompt />
 
       {/* Mobile Bottom Navigation */}
-      <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <MobileNav activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );
 }

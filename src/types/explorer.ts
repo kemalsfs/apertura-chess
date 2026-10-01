@@ -1,5 +1,26 @@
 export type ExplorerSource = 'masters' | 'lichess';
 
+export interface ExplorerProvenance {
+  kind: 'lichess-api' | 'unavailable';
+  source: ExplorerSource;
+  sourceUrl: string;
+  retrievedAt: string | null;
+  filters: {
+    ratings?: string;
+    speeds?: string;
+    topGames: number;
+  };
+  schemaVersion: 1;
+}
+
+export interface BundledBookMetadata {
+  source: string | null;
+  retrievedAt: string | null;
+  filters: string | null;
+  schemaVersion: number | null;
+  statisticsVerified: boolean;
+}
+
 export interface ExplorerMove {
   uci: string;
   san: string;
@@ -33,6 +54,7 @@ export interface OpeningInfo {
 }
 
 export interface ExplorerResult {
+  provenance: ExplorerProvenance;
   moves: ExplorerMove[];
   opening?: OpeningInfo;
   white: number;

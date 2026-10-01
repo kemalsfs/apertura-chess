@@ -24,6 +24,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
   const [data, setData] = useState<ExplorerResult | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const dataUnavailable = data?.provenance.kind === 'unavailable';
 
   useEffect(() => {
     const controller = new AbortController();
@@ -175,9 +176,11 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
             <div className="w-8 h-8 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center mb-2 text-zinc-600 text-sm">
               ♟
             </div>
-            <span className="font-semibold text-zinc-400">Teori Dışı Konum (0 Oyun)</span>
+            <span className="font-semibold text-zinc-400">{dataUnavailable ? 'Veri yok' : 'Kayıtlı hamle yok'}</span>
             <span className="text-[11px] text-zinc-600 mt-0.5 max-w-[220px]">
-              Büyükusta arşivinde bu pozisyonda oynanmış kayıtlı maç bulunmuyor.
+              {dataUnavailable
+                ? 'Lichess verisine erişilemedi; doğrulanmamış çevrimdışı sayılar gösterilmiyor.'
+                : 'Seçili Lichess veritabanında bu konum için kayıtlı hamle bulunmuyor.'}
             </span>
           </div>
         ) : (

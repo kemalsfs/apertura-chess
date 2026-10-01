@@ -34,7 +34,8 @@ export interface DrillStats {
 export function useDrillSession(
   activeRepertoireId: string, 
   orientation: RepertoireColor,
-  initialFilter: DrillFilterType = 'due'
+  initialFilter: DrillFilterType = 'due',
+  selectedLineId?: string | null
 ) {
   const [allExtractedLines, setAllExtractedLines] = useState<RepertoireNode[][]>([]);
   const [skippedUntrainableLines, setSkippedUntrainableLines] = useState(0);
@@ -169,7 +170,9 @@ export function useDrillSession(
       setSkippedUntrainableLines(extractedLines.length - allLines.length);
       setAllExtractedLines(allLines);
 
-      const activeLines = filterRepertoireLines(allLines, filter);
+      const activeLines = selectedLineId
+        ? allLines.filter(line => line[line.length - 1]?.id === selectedLineId)
+        : filterRepertoireLines(allLines, filter);
 
       setLines(activeLines);
       setLineIndex(0);
@@ -195,7 +198,7 @@ export function useDrillSession(
       if (autoMoveTimerRef.current) clearTimeout(autoMoveTimerRef.current);
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     };
-  }, [activeRepertoireId, filter, orientation, setupLine]);
+  }, [activeRepertoireId, filter, orientation, selectedLineId, setupLine]);
 
   // Handle subsequent opponent auto-moves beyond ply 1
   useEffect(() => {
@@ -478,7 +481,9 @@ export function useDrillSession(
   // Restart entire session
   const restartSession = useCallback(() => {
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
-    const activeLines = filterRepertoireLines(allExtractedLines, filter);
+    const activeLines = selectedLineId
+      ? allExtractedLines.filter(line => line[line.length - 1]?.id === selectedLineId)
+      : filterRepertoireLines(allExtractedLines, filter);
 
     setLines(activeLines);
     setLineIndex(0);
@@ -497,7 +502,7 @@ export function useDrillSession(
     if (activeLines.length > 0) {
       setupLine(activeLines[0]);
     }
-  }, [allExtractedLines, filter, setupLine]);
+  }, [allExtractedLines, filter, selectedLineId, setupLine]);
 
   // Apply a new custom filter
   const changeFilter = useCallback(

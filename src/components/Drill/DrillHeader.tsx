@@ -9,6 +9,7 @@ interface DrillHeaderProps {
   totalLines: number;
   stats: DrillStats;
   currentFilter: DrillFilterType;
+  singleLine?: boolean;
   onExit: () => void;
   onRestart: () => void;
   onOpenVariantManager: () => void;
@@ -20,6 +21,7 @@ export const DrillHeader: React.FC<DrillHeaderProps> = ({
   totalLines,
   stats,
   currentFilter,
+  singleLine = false,
   onExit,
   onRestart,
   onOpenVariantManager,
@@ -76,11 +78,12 @@ export const DrillHeader: React.FC<DrillHeaderProps> = ({
           {/* Variant Manager Filter Button */}
           <button
             onClick={onOpenVariantManager}
+            disabled={singleLine}
             className="flex items-center gap-1 text-[11px] sm:text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 px-2 sm:px-2.5 py-1 rounded-lg font-medium transition cursor-pointer"
             title="Varyant Yönetimi & Filtre"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="truncate max-w-[100px] xs:max-w-none">{filterLabels[currentFilter]}</span>
+            <span className="truncate max-w-[100px] xs:max-w-none">{singleLine ? 'Seçili Varyant' : filterLabels[currentFilter]}</span>
           </button>
 
           <div className="flex items-center gap-1 text-[11px] sm:text-xs bg-amber-500/10 border border-amber-500/20 px-2 sm:px-2.5 py-1 rounded-lg text-amber-400 font-bold shrink-0">

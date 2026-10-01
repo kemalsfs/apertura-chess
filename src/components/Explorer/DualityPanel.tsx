@@ -16,6 +16,8 @@ export const DualityPanel: React.FC<DualityPanelProps> = ({
 }) => {
   const topMasterMoves = explorerData?.moves?.slice(0, 3) || [];
   const bestMasterMove = topMasterMoves[0];
+  const dataUnavailable = explorerData?.provenance.kind === 'unavailable';
+  const sourceName = explorerData?.provenance.source === 'lichess' ? 'İnsan' : 'Masters';
 
   const topEngineMoves = evaluation.topMoves || (evaluation.bestMove ? [{
     uci: evaluation.bestMove,
@@ -58,19 +60,19 @@ export const DualityPanel: React.FC<DualityPanelProps> = ({
               <span>⚡ Teori & Motor Ayrışması (Tuzak İhtimali)</span>
             </div>
             <p className="text-zinc-300 leading-relaxed">
-              İnsan ustalar çoğunlukla <strong className="text-amber-400 font-mono">{bestMasterMove.san}</strong> oynuyor (%{bestMasterMove.whitePercent.toFixed(0)} B / %{bestMasterMove.blackPercent.toFixed(0)} S), ancak Stockfish derinlik {evaluation.depth}'de <strong className="text-emerald-400 font-mono">{bestEngineMove.san || bestEngineMove.uci}</strong> hamlesini ({formatScore(bestEngineMove.value, bestEngineMove.type)}) en iyi görüyor.
+              {sourceName} verisinde en sık <strong className="text-amber-400 font-mono">{bestMasterMove.san}</strong> oynanmış (%{bestMasterMove.whitePercent.toFixed(0)} B / %{bestMasterMove.blackPercent.toFixed(0)} S), ancak Stockfish derinlik {evaluation.depth}'de <strong className="text-emerald-400 font-mono">{bestEngineMove.san || bestEngineMove.uci}</strong> hamlesini ({formatScore(bestEngineMove.value, bestEngineMove.type)}) en iyi görüyor.
             </p>
           </div>
         </div>
       ) : topMasterMoves.length > 0 && bestEngineMove ? (
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2.5 flex items-center gap-2 text-[11px] text-emerald-300 shadow-sm">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>Mükemmel Uyum: Büyükustalar ve Stockfish aynı ana hatta birleşiyor.</span>
+          <span>Hamle uyumu: {sourceName} verisinde en sık oynanan hamle Stockfish önerisiyle aynı.</span>
         </div>
       ) : topMasterMoves.length === 0 ? (
         <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 flex items-center gap-2 text-[11px] text-zinc-400">
           <Sparkles className="w-4 h-4 text-zinc-500 shrink-0" />
-          <span>Teori Dışı / Serbest Konum: Stockfish derin motor analizine devam ediyor.</span>
+          <span>{dataUnavailable ? 'Açılış verisi yok; çevrimdışı istatistik gösterilmiyor.' : 'Bu konum için karşılaştırılacak açılış hamlesi yok.'}</span>
         </div>
       ) : null}
 
@@ -82,14 +84,14 @@ export const DualityPanel: React.FC<DualityPanelProps> = ({
             <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80 mb-2.5">
               <div className="flex items-center gap-1.5 font-bold text-zinc-200 text-[11px]">
                 <Users className="w-3.5 h-3.5 text-amber-400" />
-                <span>İnsan Usta Tercihleri</span>
+                <span>{sourceName} Hamleleri</span>
               </div>
-              <span className="text-[10px] text-zinc-500 font-mono">Masters DB</span>
+              <span className="text-[10px] text-zinc-500 font-mono">{dataUnavailable ? 'Veri yok' : 'Lichess API'}</span>
             </div>
 
             {topMasterMoves.length === 0 ? (
               <div className="py-6 text-center text-zinc-600 italic text-[11px]">
-                Kayıtlı usta maçı yok (Teori Sonu)
+                {dataUnavailable ? 'Veri yok: Lichess verisine erişilemedi.' : 'Bu konum için kayıtlı hamle yok.'}
               </div>
             ) : (
               <div className="space-y-1.5">

@@ -1,5 +1,15 @@
 ﻿import type { EcoPosition } from '../types/explorer';
 
+// Historical bundled counts have no recorded source or extraction parameters.
+// Keep the data for investigation, but never present it as measured games.
+export const LICHESS_PLAYER_BOOK_METADATA = {
+  source: null,
+  retrievedAt: null,
+  filters: null,
+  schemaVersion: null,
+  statisticsVerified: false,
+} as const;
+
 export const LICHESS_PLAYER_BOOK: Record<string, EcoPosition> = {
   // Starting position
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -": {

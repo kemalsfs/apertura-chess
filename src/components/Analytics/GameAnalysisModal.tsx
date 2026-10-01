@@ -685,26 +685,22 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
               </div>
             ) : null}
 
-            {/* Side-by-Side: Master Moves vs Top-3 Engine Moves */}
+            {/* Side-by-Side: local opening lines vs Top-3 Engine Moves */}
             <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-2.5 rounded-2xl border border-zinc-800 text-[11px]">
-              {/* Left: Master Moves */}
+              {/* Left: local opening lines; bundled game counts have no provenance */}
               <div className="space-y-1.5 border-r border-zinc-800/80 pr-2">
                 <div className="flex items-center gap-1 font-bold text-zinc-300 text-[10px]">
                   <Users className="w-3 h-3 text-amber-400" />
-                  <span>Usta Tercihleri</span>
+                  <span>Yerel Açılış Hamleleri</span>
                 </div>
                 {masterMoves.length === 0 ? (
-                  <div className="text-zinc-600 italic text-[10px] py-2">Teori sonu</div>
+                  <div className="text-zinc-600 italic text-[10px] py-2">Yerel açılış hamlesi yok</div>
                 ) : (
-                  masterMoves.map((m: any, idx: number) => {
-                    const totalG = (m.white || 0) + (m.draws || 0) + (m.black || 0);
-                    return (
+                  masterMoves.map((m, idx) => (
                       <div key={m.uci} className="flex items-center justify-between text-[10px] font-mono bg-zinc-900/60 p-1 rounded">
                         <span className="font-bold text-zinc-200">{idx + 1}. {m.san}</span>
-                        <span className="text-zinc-500">{totalG > 0 ? `${totalG.toLocaleString()} m` : ''}</span>
                       </div>
-                    );
-                  })
+                  ))
                 )}
               </div>
 

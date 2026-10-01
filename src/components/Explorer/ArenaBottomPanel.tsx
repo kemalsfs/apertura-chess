@@ -25,6 +25,7 @@ import {
 import { parseUci } from '../../utils/chessHelpers';
 
 interface ArenaBottomPanelProps {
+  tokenModalRequest?: number;
   fen: string;
   currentChildren: RepertoireNode[];
   evaluation: EvaluationResult;
@@ -32,6 +33,7 @@ interface ArenaBottomPanelProps {
 }
 
 export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
+  tokenModalRequest = 0,
   fen,
   currentChildren,
   evaluation,
@@ -46,6 +48,13 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
   const [tokenInput, setTokenInput] = useState(() => getLichessToken());
   const [hasToken, setHasToken] = useState(() => !!getLichessToken());
 
+  useEffect(() => {
+    if (tokenModalRequest > 0) {
+      setTokenInput(getLichessToken());
+      setIsTokenModalOpen(true);
+    }
+  }, [tokenModalRequest]);
+
   // Fetch opening explorer data on FEN or source change
   useEffect(() => {
     const controller = new AbortController();
@@ -53,6 +62,7 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
 
     setIsLoading(true);
     setError(null);
+    setData(null);
 
     async function loadExplorer() {
       try {
@@ -105,6 +115,10 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
   // Human top moves
   const topHumanMoves = data?.moves?.slice(0, 3) || [];
   const humanBest = topHumanMoves[0];
+  const dataUnavailable = data?.provenance.kind === 'unavailable';
+  const sourceLabel = data?.provenance.kind === 'lichess-api'
+    ? `Lichess API · ${source === 'masters' ? 'Masters' : 'İnsan'}`
+    : 'Veri yok';
 
   // Engine top moves (MultiPV=3)
   const topEngineMoves = evaluation.topMoves && evaluation.topMoves.length > 0
@@ -177,7 +191,7 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                   ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
-              title="Büyükusta Veritabanı (2400+ FIDE Tarihi Maçları)"
+              title="Lichess Masters açılış verileri"
             >
               <Award className="w-3 h-3 text-amber-400" />
               <span>Büyükustalar</span>
@@ -190,7 +204,7 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                   ? 'bg-zinc-800 text-blue-400 font-bold border border-zinc-700'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
-              title="Lichess İnsan Oyuncu Veritabanı (500M+ Maç)"
+              title="Lichess oyuncu açılış verileri"
             >
               <Users className="w-3 h-3 text-blue-400" />
               <span>İnsan DB</span>
@@ -226,19 +240,19 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                   <span>⚡ Teori & Motor Ayrışması (Taktiksel Fırsat / Tuzak)</span>
                 </div>
                 <p className="text-zinc-300 text-[11px] leading-relaxed">
-                  {source === 'masters' ? 'Büyükustalar' : 'İnsan oyuncular'} çoğunlukla <strong className="text-amber-400 font-mono">{humanBest.san}</strong> oynuyor ({formatCount(humanBest.totalGames)} oyun, %{humanBest.whitePercent.toFixed(0)} B / %{humanBest.blackPercent.toFixed(0)} S), fakat Stockfish <strong className="text-emerald-400 font-mono">{engineBest.san || engineBest.uci}</strong> hamlesini ({formatScore(engineBest.value, engineBest.type)}) en üstün görüyor.
+                  {source === 'masters' ? 'Masters verisinde' : 'İnsan verisinde'} en sık <strong className="text-amber-400 font-mono">{humanBest.san}</strong> oynanmış ({formatCount(humanBest.totalGames)} oyun, %{humanBest.whitePercent.toFixed(0)} B / %{humanBest.blackPercent.toFixed(0)} S), fakat Stockfish <strong className="text-emerald-400 font-mono">{engineBest.san || engineBest.uci}</strong> hamlesini ({formatScore(engineBest.value, engineBest.type)}) en üstün görüyor.
                 </p>
               </div>
             </div>
           ) : topHumanMoves.length > 0 && engineBest ? (
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2 flex items-center gap-2 text-[11px] text-emerald-300 shadow-xs">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span><strong>Mükemmel Uyum:</strong> {source === 'masters' ? 'Büyükustalar' : 'İnsan teorisi'} ve Stockfish aynı hamlede ({humanBest.san}) birleşiyor.</span>
+              <span><strong>Hamle uyumu:</strong> {source === 'masters' ? 'Masters' : 'İnsan'} verisinde en sık oynanan hamle Stockfish önerisiyle aynı ({humanBest.san}).</span>
             </div>
           ) : (
             <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-2 flex items-center gap-2 text-[11px] text-zinc-400">
               <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Teori Sonu / Serbest Konum: Stockfish derin analiz önerilerini listeliyor.</span>
+              <span>{dataUnavailable ? 'Açılış verisi yok; çevrimdışı istatistik gösterilmiyor.' : 'Bu konum için karşılaştırılacak açılış hamlesi yok.'}</span>
             </div>
           )}
 
@@ -257,7 +271,7 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                     <span>En Popüler 3 {source === 'masters' ? 'Usta' : 'İnsan'} Hamlesi</span>
                   </div>
                   <span className={`text-[9px] font-mono font-bold ${source === 'masters' ? 'text-amber-400' : 'text-blue-400'}`}>
-                    {source === 'masters' ? 'Masters DB (2400+)' : 'İnsan DB (500M+)'}
+                    {sourceLabel}
                   </span>
                 </div>
 
@@ -266,19 +280,9 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
                     <span>Yükleniyor...</span>
                   </div>
-                ) : source === 'lichess' && !hasToken ? (
-                  <div className="py-4 px-2 text-center flex flex-col items-center gap-1.5 bg-zinc-950/40 rounded-lg border border-zinc-800/60">
-                    <span className="text-[11px] text-zinc-300 font-medium">Lichess DB Canlı Bağlantı Gerekli</span>
-                    <button
-                      onClick={() => setIsTokenModalOpen(true)}
-                      className="text-[10px] text-amber-400 font-bold hover:underline cursor-pointer"
-                    >
-                      🔑 API Token Ekle
-                    </button>
-                  </div>
                 ) : topHumanMoves.length === 0 ? (
                   <div className="py-5 text-center text-zinc-500 text-[11px] italic">
-                    Kayıtlı usta maçı yok (Teori Dışı)
+                    {dataUnavailable ? 'Veri yok: Lichess verisine erişilemedi.' : 'Bu konum için kayıtlı hamle yok.'}
                   </div>
                 ) : (
                   <div className="space-y-1.5">
@@ -418,7 +422,7 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-zinc-500 font-mono">
-                  {data.totalGames > 0 ? `${formatCount(data.totalGames)} oyun` : 'Resmi Teori'}
+                  {data.totalGames > 0 ? `${formatCount(data.totalGames)} oyun` : 'Kayıtlı oyun yok'}
                 </span>
                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${
                   source === 'masters' 
@@ -427,7 +431,7 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                     ? 'bg-emerald-500/10 text-emerald-400' 
                     : 'bg-blue-500/10 text-blue-400'
                 }`}>
-                  {source === 'masters' ? '2400+ Usta' : hasToken ? 'Canlı API' : 'Lichess 500M+'}
+                  {sourceLabel}
                 </span>
               </div>
             </div>
@@ -444,9 +448,9 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
                   <div className="text-xs text-zinc-500 py-6 text-center italic">{error}</div>
                 ) : !data || data.moves.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-6 text-center text-xs text-zinc-500">
-                    <span className="font-semibold text-zinc-400">Teori Dışı Konum (0 Oyun)</span>
+                    <span className="font-semibold text-zinc-400">{dataUnavailable ? 'Veri yok' : 'Kayıtlı hamle yok'}</span>
                     <span className="text-[11px] text-zinc-600 mt-0.5">
-                      Seçili veritabanında bu pozisyonda oynanmış kayıtlı maç bulunmuyor.
+                      {dataUnavailable ? 'Lichess verisine erişilemedi; doğrulanmamış çevrimdışı sayılar gösterilmiyor.' : 'Seçili veritabanında bu konum için kayıtlı hamle bulunmuyor.'}
                     </span>
                   </div>
                 ) : (

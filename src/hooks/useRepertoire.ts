@@ -469,6 +469,10 @@ export function useRepertoire() {
     [pendingPromotion, playMove]
   );
 
+  const cancelPromotion = useCallback(() => {
+    setPendingPromotion(null);
+  }, []);
+
   // Save comment for current step
   const saveComment = useCallback(
     async (comment: string) => {
@@ -622,6 +626,7 @@ export function useRepertoire() {
     clearRepertoire,
     pendingPromotion,
     completePromotion,
+    cancelPromotion,
     goToStep,
     goToNode,
     loadAndGoToNode,

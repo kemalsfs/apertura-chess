@@ -14,6 +14,7 @@ interface DrillViewProps {
   repertoires: Repertoire[];
   activeRepertoireId: string;
   orientation: RepertoireColor;
+  selectedLineId?: string | null;
   onExit: () => void;
   onOpenVariantOnBoard?: (nodeId: string) => void;
 }
@@ -22,6 +23,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
   repertoires,
   activeRepertoireId,
   orientation,
+  selectedLineId,
   onExit,
   onOpenVariantOnBoard,
 }) => {
@@ -46,7 +48,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
     advanceToNextLine,
     restartSession,
     changeFilter,
-  } = useDrillSession(activeRepertoireId, orientation);
+  } = useDrillSession(activeRepertoireId, orientation, 'due', selectedLineId);
 
   const evaluation = useEvaluation(currentFen, chess.turn());
 
@@ -96,14 +98,14 @@ export const DrillView: React.FC<DrillViewProps> = ({
     return (
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center max-w-md mx-auto my-12 shadow-2xl">
         <h2 className="text-lg font-bold text-zinc-100 mb-2">
-          {filter === 'due' ? 'Bugün tekrar yok' : 'Bu filtrede varyant yok'}
+          {selectedLineId ? 'Bu varyant çalışılamıyor' : filter === 'due' ? 'Bugün tekrar yok' : 'Bu filtrede varyant yok'}
         </h2>
         <p className="text-xs text-zinc-400 mb-6">
-          {filter === 'due' ? 'Günün tekrarlarını tamamladın.' : 'Seçilen ölçüte uyan çalışılabilir varyant bulunamadı.'}
+          {selectedLineId ? 'Seçilen varyant silinmiş olabilir veya oynayacağın bir hamle içermiyor.' : filter === 'due' ? 'Günün tekrarlarını tamamladın.' : 'Seçilen ölçüte uyan çalışılabilir varyant bulunamadı.'}
         </p>
-        <button onClick={() => changeFilter('all')}
+        <button onClick={selectedLineId ? onExit : () => changeFilter('all')}
           className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-xl text-xs cursor-pointer">
-          Tüm varyantları çalış
+          {selectedLineId ? 'Açılış Ağacına Dön' : 'Tüm varyantları çalış'}
         </button>
       </div>
     );
@@ -118,6 +120,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
         totalLines={lines.length}
         stats={stats}
         currentFilter={filter}
+        singleLine={!!selectedLineId}
         onExit={onExit}
         onRestart={restartSession}
         onOpenVariantManager={() => setIsVariantManagerOpen(true)}

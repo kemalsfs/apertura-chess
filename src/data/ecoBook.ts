@@ -1,4 +1,14 @@
-import type { EcoPosition } from '../types/explorer';
+import type { EcoPosition, BundledBookMetadata } from '../types/explorer';
+
+// Historical bundled counts have no recorded source or extraction parameters.
+// Keep the data for investigation, but never present it as measured games.
+export const ECO_BOOK_METADATA: BundledBookMetadata = {
+  source: null,
+  retrievedAt: null,
+  filters: null,
+  schemaVersion: null,
+  statisticsVerified: false,
+};
 
 export const ECO_BOOK: Record<string, EcoPosition> = {
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -": {

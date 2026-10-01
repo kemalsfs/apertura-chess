@@ -1,14 +1,13 @@
 import { db } from '../db/db';
-import type { ExplorerResult, ExplorerSource, ExplorerMove } from '../types/explorer';
+import type { ExplorerResult, ExplorerSource, ExplorerMove, ExplorerProvenance } from '../types/explorer';
 import { normalizeFen } from '../utils/chessHelpers';
-import { ECO_BOOK } from '../data/ecoBook';
-import { LICHESS_PLAYER_BOOK } from '../data/lichessPlayerBook';
 
 // In-Memory Fast Cache separated by source
 const memoryCache = new Map<string, ExplorerResult>();
 
 export const LICHESS_TOKEN_KEY = 'apertura_lichess_token';
-export const CACHE_VERSION = 'v4';
+// Earlier cache versions can contain offline counts whose provenance is unknown.
+export const CACHE_VERSION = 'v5';
 
 export function getLichessToken(): string {
   if (typeof window === 'undefined') return '';
@@ -50,6 +49,8 @@ export async function fetchOpeningExplorer(
       dbItem &&
       dbItem.data &&
       dbItem.source === source &&
+      dbItem.data.provenance?.kind === 'lichess-api' &&
+      dbItem.data.provenance.source === source &&
       Date.now() - dbItem.timestamp < 1000 * 60 * 60 * 24 * 7
     ) {
       memoryCache.set(cacheKey, dbItem.data);
@@ -74,6 +75,14 @@ export async function fetchOpeningExplorer(
   params.set('topGames', '0');
 
   const url = `${baseUrl}?${params.toString()}`;
+  const provenanceBase: Omit<ExplorerProvenance, 'kind' | 'retrievedAt'> = {
+    source,
+    sourceUrl: baseUrl,
+    filters: source === 'lichess'
+      ? { ratings: '1600,1800,2000,2200,2500', speeds: 'blitz,rapid,classical', topGames: 0 }
+      : { topGames: 0 },
+    schemaVersion: 1,
+  };
 
   // 4. Prepare Headers with Bearer Token if available
   const token = getLichessToken();
@@ -119,6 +128,7 @@ export async function fetchOpeningExplorer(
     });
 
     const result: ExplorerResult = {
+      provenance: { ...provenanceBase, kind: 'lichess-api', retrievedAt: new Date().toISOString() },
       moves,
       opening: raw.opening ? { eco: raw.opening.eco, name: raw.opening.name } : undefined,
       white: totalWhite,
@@ -143,104 +153,13 @@ export async function fetchOpeningExplorer(
 
     return result;
   } catch (apiError) {
-    // 1. Offline fallback for Masters DB (2400+ FIDE Grandmaster Games)
-    if (source === 'masters') {
-      const localEco = ECO_BOOK[normFen];
-      if (localEco) {
-        let totalPosWhite = 0;
-        let totalPosDraws = 0;
-        let totalPosBlack = 0;
+    if (signal?.aborted) throw apiError;
 
-        const calculatedMoves: ExplorerMove[] = localEco.moves.map((m: any) => {
-          const white = m.white || 0;
-          const draws = m.draws || 0;
-          const black = m.black || 0;
-          const total = white + draws + black;
-
-          totalPosWhite += white;
-          totalPosDraws += draws;
-          totalPosBlack += black;
-
-          return {
-            uci: m.uci,
-            san: m.san,
-            white,
-            draws,
-            black,
-            averageRating: 2480,
-            whitePercent: total > 0 ? (white / total) * 100 : 0,
-            drawsPercent: total > 0 ? (draws / total) * 100 : 0,
-            blackPercent: total > 0 ? (black / total) * 100 : 0,
-            totalGames: total,
-          };
-        });
-
-        const totalPositionGames = totalPosWhite + totalPosDraws + totalPosBlack;
-
-        const fallbackResult: ExplorerResult = {
-          moves: calculatedMoves,
-          opening: { eco: localEco.eco, name: localEco.name },
-          white: totalPosWhite,
-          draws: totalPosDraws,
-          black: totalPosBlack,
-          totalGames: totalPositionGames,
-        };
-
-        memoryCache.set(cacheKey, fallbackResult);
-        return fallbackResult;
-      }
-    }
-
-    // 2. Offline fallback for Lichess DB (500M+ Historical Human Player Games, 1600-2500+ Elo)
-    if (source === 'lichess') {
-      const playerEco = LICHESS_PLAYER_BOOK[normFen] || ECO_BOOK[normFen];
-      if (playerEco) {
-        let totalPosWhite = 0;
-        let totalPosDraws = 0;
-        let totalPosBlack = 0;
-
-        const calculatedMoves: ExplorerMove[] = playerEco.moves.map((m: any) => {
-          const white = m.white || 0;
-          const draws = m.draws || 0;
-          const black = m.black || 0;
-          const total = white + draws + black;
-
-          totalPosWhite += white;
-          totalPosDraws += draws;
-          totalPosBlack += black;
-
-          return {
-            uci: m.uci,
-            san: m.san,
-            white,
-            draws,
-            black,
-            averageRating: 1950,
-            whitePercent: total > 0 ? (white / total) * 100 : 0,
-            drawsPercent: total > 0 ? (draws / total) * 100 : 0,
-            blackPercent: total > 0 ? (black / total) * 100 : 0,
-            totalGames: total,
-          };
-        });
-
-        const totalPositionGames = totalPosWhite + totalPosDraws + totalPosBlack;
-
-        const fallbackResult: ExplorerResult = {
-          moves: calculatedMoves,
-          opening: { eco: playerEco.eco, name: playerEco.name },
-          white: totalPosWhite,
-          draws: totalPosDraws,
-          black: totalPosBlack,
-          totalGames: totalPositionGames,
-        };
-
-        memoryCache.set(cacheKey, fallbackResult);
-        return fallbackResult;
-      }
-    }
-
-    // Truthful empty result for out-of-theory positions
-    const emptyResult: ExplorerResult = {
+    // Legacy bundled books lack a verifiable source and retrieval date. Do not
+    // report their counts as Masters or human games when the API is unavailable.
+    // Do not cache this result: the next request should retry the live service.
+    const unavailableResult: ExplorerResult = {
+      provenance: { ...provenanceBase, kind: 'unavailable', retrievedAt: null },
       moves: [],
       opening: undefined,
       white: 0,
@@ -249,7 +168,6 @@ export async function fetchOpeningExplorer(
       totalGames: 0,
     };
 
-    memoryCache.set(cacheKey, emptyResult);
-    return emptyResult;
+    return unavailableResult;
   }
 }
