@@ -9,7 +9,7 @@ interface MobileNavProps {
 
 export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) => {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 px-1 py-1.5 flex items-center justify-around">
+    <nav className="mobile-nav md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 px-1 pt-1.5 flex items-center justify-around">
       <button
         onClick={() => onTabChange('hub')}
         className={`flex flex-col items-center gap-1 py-1 px-1.5 rounded-lg text-[9px] font-medium transition cursor-pointer ${

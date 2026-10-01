@@ -114,7 +114,7 @@ export function App() {
   return (
     <div
       style={{ backgroundColor: theme.bgBase }}
-      className="min-h-screen text-zinc-100 flex flex-col pb-16 md:pb-6 transition-colors duration-300"
+      className="app-shell min-h-screen text-zinc-100 flex flex-col transition-colors duration-300"
     >
       {/* Top Header */}
       <Header
