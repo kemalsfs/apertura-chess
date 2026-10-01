@@ -139,12 +139,12 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
   return (
     <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-2xl p-3.5 shadow-xl backdrop-blur-xl flex flex-col gap-2.5 transition-all">
       {/* Top Header & Tab Navigation Bar */}
-      <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+      <div className="flex flex-col gap-2 pb-2 border-b border-zinc-800/80 sm:flex-row sm:items-center sm:justify-between">
         {/* Main Tabs */}
-        <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-0.5 rounded-xl">
+        <div className="flex w-full items-center gap-1 bg-zinc-900 border border-zinc-800 p-0.5 rounded-xl sm:w-auto">
           <button
             onClick={() => setActiveTab('duality')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+            className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-2 py-1 rounded-lg text-xs font-semibold transition cursor-pointer sm:flex-none sm:px-3 ${
               activeTab === 'duality'
                 ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700 shadow-xs'
                 : 'text-zinc-400 hover:text-zinc-200'
@@ -156,7 +156,7 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
 
           <button
             onClick={() => setActiveTab('theory')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+            className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-2 py-1 rounded-lg text-xs font-semibold transition cursor-pointer sm:flex-none sm:px-3 ${
               activeTab === 'theory'
                 ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700 shadow-xs'
                 : 'text-zinc-400 hover:text-zinc-200'
@@ -168,7 +168,7 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
         </div>
 
         {/* Database Source Switcher & Token Status */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex w-full items-center justify-between gap-1.5 sm:w-auto sm:justify-start">
           <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-0.5 rounded-xl">
             <button
               onClick={() => setSource('masters')}
