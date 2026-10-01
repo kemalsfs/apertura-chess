@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import type { Repertoire } from '../../types/chess';
-import { BookOpen, Trash2, Plus, Star } from 'lucide-react';
+import { BookOpen, Trash2, Plus, Star, HardDriveDownload } from 'lucide-react';
 import { ConfirmModal } from '../Common/ConfirmModal';
+import { DataBackupDialog } from './DataBackupDialog';
 
 interface RepertoireHeaderProps {
   repertoires: Repertoire[];
@@ -24,6 +25,7 @@ export const RepertoireHeader: React.FC<RepertoireHeaderProps> = ({
 }) => {
   const [isWipeModalOpen, setIsWipeModalOpen] = useState(false);
   const [isDeleteTreeModalOpen, setIsDeleteTreeModalOpen] = useState(false);
+  const [isBackupOpen, setIsBackupOpen] = useState(false);
 
   const activeRepertoire = repertoires.find(r => r.id === activeId);
 
@@ -96,6 +98,15 @@ export const RepertoireHeader: React.FC<RepertoireHeaderProps> = ({
             </button>
           )}
 
+          <button
+            onClick={() => setIsBackupOpen(true)}
+            className="flex shrink-0 items-center gap-1 rounded-xl border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-semibold text-zinc-200 hover:text-amber-300"
+            title="Repertuvar ve maç verilerini yedekle veya geri yükle"
+          >
+            <HardDriveDownload className="h-3.5 w-3.5" />
+            <span>Yedek</span>
+          </button>
+
           {/* Set as Default Action */}
           {onSetDefault && activeRepertoire && !activeRepertoire.isDefault && (
             <button
@@ -143,6 +154,7 @@ export const RepertoireHeader: React.FC<RepertoireHeaderProps> = ({
         onConfirm={handleConfirmDeleteTree}
         onCancel={() => setIsDeleteTreeModalOpen(false)}
       />
+      {isBackupOpen && <DataBackupDialog onClose={() => setIsBackupOpen(false)} />}
     </>
   );
 };
