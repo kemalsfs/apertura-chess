@@ -1,8 +1,8 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../../db/db';
-import type { ImportedGame } from '../../types/analytics';
-import type { RepertoireNode } from '../../types/chess';
-import { calculateOverallAnalytics } from '../../services/repertoireMatcher';
+import type { ImportedGame, RepertoireMatchResult } from '../../types/analytics';
+import type { Repertoire, RepertoireNode } from '../../types/chess';
+import { calculateOverallAnalytics, matchGameWithRepertoire } from '../../services/repertoireMatcher';
 import { AnalyticsSummaryCards } from './AnalyticsSummaryCards';
 import { OpeningPerformanceTable } from './OpeningPerformanceTable';
 import { RecentGamesList } from './RecentGamesList';
@@ -10,32 +10,87 @@ import { GameImportModal } from './GameImportModal';
 import { GameAnalysisModal } from './GameAnalysisModal';
 import { Globe, RefreshCw, BarChart2 } from 'lucide-react';
 
+interface RepertoireTree {
+  repertoire: Repertoire;
+  nodes: Map<string, RepertoireNode>;
+}
+
+/** Compare each real tree independently so duplicate opening moves do not hide a sibling tree. */
+export function selectBestRepertoireMatch(
+  game: ImportedGame,
+  trees: RepertoireTree[]
+): { matchResult: RepertoireMatchResult; tree?: RepertoireTree } {
+  let best: { matchResult: RepertoireMatchResult; tree?: RepertoireTree } = {
+    matchResult: { matchedCount: 0, whoDeviated: 'none' },
+  };
+
+  for (const tree of trees) {
+    if (tree.repertoire.color !== game.userColor || tree.nodes.size === 0) continue;
+    const matchResult = matchGameWithRepertoire(game, tree.nodes);
+    const complete = matchResult.whoDeviated === 'none' && matchResult.matchedCount > 0;
+    const bestComplete = best.matchResult.whoDeviated === 'none' && best.matchResult.matchedCount > 0;
+
+    // A line ending in the repertoire is covered, even if another tree continues and deviates.
+    // For equal coverage, prefer the longest line; the sorted tree order breaks remaining ties.
+    if (!best.tree || (complete && !bestComplete) ||
+        (complete === bestComplete && matchResult.matchedCount > best.matchResult.matchedCount)) {
+      best = { matchResult, tree };
+    }
+  }
+
+  return best;
+}
+
+export function calculateAnalyticsForTrees(games: ImportedGame[], trees: RepertoireTree[]) {
+  // Results and win rates are independent of repertoire matching. Rebuild every
+  // deviation count from the best matching real tree for each individual game.
+  const base = calculateOverallAnalytics(games, new Map(), new Map());
+  const statsByKey = new Map(base.openingStats.map(stat => [
+    `${stat.color}_${stat.eco}_${stat.name}`, stat,
+  ]));
+  const processedGames = games.map(game => {
+    const { matchResult } = selectBestRepertoireMatch(game, trees);
+    const ecoKey = game.eco || (game.openingName ? game.openingName.slice(0, 3) : 'Genel');
+    const openingName = game.openingName || (game.eco ? `ECO ${game.eco}` : 'Bilinmeyen Açılış');
+    const stat = statsByKey.get(`${game.userColor}_${ecoKey}_${openingName}`);
+    if (stat && matchResult.whoDeviated === 'user') stat.userDeviations++;
+    else if (stat && matchResult.whoDeviated === 'opponent') stat.opponentDeviations++;
+    return { ...game, matchResult };
+  });
+  return { overall: base.overall, openingStats: base.openingStats, processedGames };
+}
+
 export const AnalyticsView: React.FC = () => {
   const [games, setGames] = useState<ImportedGame[]>([]);
-  const [whiteNodes, setWhiteNodes] = useState<Map<string, RepertoireNode>>(new Map());
-  const [blackNodes, setBlackNodes] = useState<Map<string, RepertoireNode>>(new Map());
+  const [trees, setTrees] = useState<RepertoireTree[]>([]);
   const [selectedGame, setSelectedGame] = useState<ImportedGame | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const allGames = await db.games.orderBy('date').reverse().toArray();
-    const allNodes = await db.nodes.toArray();
+    const [allGames, allRepertoires, allNodes] = await db.transaction(
+      'r', db.games, db.repertoires, db.nodes,
+      async () => Promise.all([
+        db.games.orderBy('date').reverse().toArray(),
+        db.repertoires.toArray(),
+        db.nodes.toArray(),
+      ])
+    );
 
-    const wMap = new Map<string, RepertoireNode>();
-    const bMap = new Map<string, RepertoireNode>();
+    // Default first, then creation order and ID: ties have a stable source.
+    const orderedRepertoires = [...allRepertoires].sort((a, b) =>
+      Number(!!b.isDefault) - Number(!!a.isDefault) ||
+      a.createdAt - b.createdAt || a.id.localeCompare(b.id)
+    );
+    const nextTrees = orderedRepertoires.map(repertoire => ({
+      repertoire,
+      nodes: new Map<string, RepertoireNode>(),
+    }));
+    const treeById = new Map(nextTrees.map(tree => [tree.repertoire.id, tree]));
+    for (const node of allNodes) treeById.get(node.repertoireId)?.nodes.set(node.id, node);
 
-    for (const n of allNodes) {
-      if (n.repertoireId === 'default-white') {
-        wMap.set(n.id, n);
-      } else if (n.repertoireId === 'default-black') {
-        bMap.set(n.id, n);
-      }
-    }
-
-    setWhiteNodes(wMap);
-    setBlackNodes(bMap);
+    setTrees(nextTrees);
     setGames(allGames);
     setIsLoading(false);
   }, []);
@@ -44,11 +99,12 @@ export const AnalyticsView: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  const { overall, openingStats, processedGames } = calculateOverallAnalytics(
-    games,
-    whiteNodes,
-    blackNodes
+  const { overall, openingStats, processedGames } = useMemo(
+    () => calculateAnalyticsForTrees(games, trees), [games, trees]
   );
+
+  const selectedTree = selectedGame && selectBestRepertoireMatch(selectedGame, trees).tree;
+  const selectedNodes = selectedTree?.nodes;
 
   return (
     <div className="flex flex-col max-w-7xl mx-auto w-full">
@@ -61,7 +117,7 @@ export const AnalyticsView: React.FC = () => {
           <div>
             <h2 className="text-base font-bold text-zinc-100">Maç Analitiği & Açılış Karnesi</h2>
             <p className="text-xs text-zinc-400">
-              Chess.com ve Lichess maçlarınızı açılış ağacınızla eşleştirip kazanma oranlarınızı görün
+              Chess.com ve Lichess maçlarınızı renginize uygun tüm repertuvar ağaçlarıyla eşleştirip kazanma oranlarınızı görün
             </p>
           </div>
         </div>
@@ -133,8 +189,8 @@ export const AnalyticsView: React.FC = () => {
       {selectedGame && (
         <GameAnalysisModal
           game={selectedGame}
-          whiteNodes={whiteNodes}
-          blackNodes={blackNodes}
+          whiteNodes={selectedGame.userColor === 'white' ? selectedNodes ?? new Map() : new Map()}
+          blackNodes={selectedGame.userColor === 'black' ? selectedNodes ?? new Map() : new Map()}
           onClose={() => setSelectedGame(null)}
           onRefreshRepertoire={loadData}
         />
