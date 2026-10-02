@@ -34,6 +34,7 @@ body,
 body {
   margin: 0;
   color: var(--theme-text-primary);
+  background: var(--theme-bg-base, #151d28);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
@@ -41,46 +42,21 @@ body {
   touch-action: pan-y;
 }
 
-/* 1. ESPRESSO & WALNUT: Sıcak Viyana Satranç Kafe Lambası (Kısılmış Mat Ton) */
-body.theme-colorhunt-espresso {
-  background: 
-    radial-gradient(ellipse at 50% 20%, #f4ede1 0%, #ece3d4 45%, #d5c5b0 100%) !important;
-  background-attachment: fixed !important;
+/* The product uses Tailwind amber utilities for its main accent. Let each
+   palette supply a quieter accent, including alpha variants and hover states. */
+.theme-light,
+.theme-dark {
+  --color-amber-200: var(--theme-accent);
+  --color-amber-300: var(--theme-accent);
+  --color-amber-400: var(--theme-accent);
+  --color-amber-500: var(--theme-accent);
+  --color-amber-600: var(--theme-accent-hover);
 }
 
-/* 2. NORDIC SLATE & ICE: Ferah İskandinav Salonu Loş Gün Işığı (Kısılmış Mat Buzul) */
-body.theme-colorhunt-nordic {
-  background: 
-    radial-gradient(ellipse at 50% 20%, #ebf1f6 0%, #dfe7ed 45%, #c2d0dc 100%) !important;
-  background-attachment: fixed !important;
-}
-
-/* 3. SAND & TERRACOTTA: Sıcak Akdeniz Güneşi ve Toprak (Kısılmış Mat Kum) */
-body.theme-colorhunt-terracotta {
-  background: 
-    radial-gradient(ellipse at 50% 20%, #eee1d2 0%, #e4d3bf 45%, #cbaf96 100%) !important;
-  background-attachment: fixed !important;
-}
-
-/* 4. TOURNAMENT FOREST: Doğal Loş FIDE Turnuva Işığı (Açılmış Orman Derinliği) */
-body.theme-colorhunt-matcha {
-  background: 
-    radial-gradient(ellipse at 50% 15%, #223c2e 0%, #15241c 55%, #0d1712 100%) !important;
-  background-attachment: fixed !important;
-}
-
-/* 5. MIDNIGHT INDIGO: Lüks Turnuva Salonu Spot Lambası (Açılmış Gece Mavisi) */
-body.theme-colorhunt-midnight {
-  background: 
-    radial-gradient(ellipse at 50% 15%, #1e2c47 0%, #111827 55%, #0a0e17 100%) !important;
-  background-attachment: fixed !important;
-}
-
-/* 6. GRANDMASTER CHARCOAL: Klasik Büyükusta Odak Masası (Açılmış Antrasit) */
-body.theme-colorhunt-monochrome {
-  background: 
-    radial-gradient(ellipse at 50% 15%, #27272e 0%, #18181b 55%, #0f0f12 100%) !important;
-  background-attachment: fixed !important;
+.bg-amber-500,
+.bg-amber-400,
+.bg-amber-300 {
+  color: var(--theme-accent-text) !important;
 }
 
 /* =========================================================
@@ -248,25 +224,31 @@ body.theme-colorhunt-monochrome {
 .theme-light .text-zinc-500,
 .theme-light .text-zinc-600 {
   color: var(--theme-text-secondary) !important;
-  opacity: 0.85;
 }
 
-.theme-light .bg-zinc-900,
-.theme-light .bg-zinc-950 {
-  background-color: rgba(255, 255, 255, 0.6) !important;
-  backdrop-filter: blur(12px) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.05) !important;
+.theme-light :is(.bg-zinc-900, .bg-zinc-950,
+  [class~="bg-zinc-900/20"], [class~="bg-zinc-900/40"],
+  [class~="bg-zinc-900/60"], [class~="bg-zinc-900/80"],
+  [class~="bg-zinc-900/95"], [class~="bg-zinc-950/40"],
+  [class~="bg-zinc-950/50"], [class~="bg-zinc-950/60"],
+  [class~="bg-zinc-950/70"], [class~="bg-zinc-950/80"],
+  [class~="bg-zinc-950/85"], [class~="bg-zinc-950/90"],
+  [class~="bg-zinc-950/95"]) {
+  background-color: var(--theme-bg-card) !important;
+  border-color: rgba(40, 35, 30, 0.14) !important;
+  box-shadow: 0 3px 12px -4px rgba(40, 35, 30, 0.10) !important;
 }
 
 .theme-light .border-zinc-800,
 .theme-light .border-zinc-700 {
-  border-color: rgba(0, 0, 0, 0.08) !important;
+  border-color: rgba(40, 35, 30, 0.16) !important;
 }
 
-.theme-light .bg-zinc-800 {
-  background-color: rgba(0, 0, 0, 0.05) !important;
-  color: var(--theme-text-primary) !important;
+.theme-light :is(.bg-zinc-800, .bg-zinc-700,
+  [class~="bg-zinc-800/30"], [class~="bg-zinc-800/40"],
+  [class~="bg-zinc-800/60"], [class~="bg-zinc-800/80"],
+  [class~="bg-zinc-700/60"]) {
+  background-color: var(--theme-bg-surface) !important;
 }
 
 /* Koyu Temalar (Derinlikli Yarı Saydam Kartlar & İnce Işık Çerçevesi) */
@@ -274,21 +256,41 @@ body.theme-colorhunt-monochrome {
   color-scheme: dark;
 }
 
-.theme-dark .bg-zinc-900,
-.theme-dark .bg-zinc-950 {
-  background-color: rgba(20, 26, 40, 0.55) !important;
-  backdrop-filter: blur(12px) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.3) !important;
+.theme-dark .text-zinc-100,
+.theme-dark .text-zinc-200 {
+  color: var(--theme-text-primary) !important;
+}
+
+.theme-dark .text-zinc-300,
+.theme-dark .text-zinc-400,
+.theme-dark .text-zinc-500,
+.theme-dark .text-zinc-600 {
+  color: var(--theme-text-secondary) !important;
+}
+
+.theme-dark :is(.bg-zinc-900, .bg-zinc-950,
+  [class~="bg-zinc-900/20"], [class~="bg-zinc-900/40"],
+  [class~="bg-zinc-900/60"], [class~="bg-zinc-900/80"],
+  [class~="bg-zinc-900/95"], [class~="bg-zinc-950/40"],
+  [class~="bg-zinc-950/50"], [class~="bg-zinc-950/60"],
+  [class~="bg-zinc-950/70"], [class~="bg-zinc-950/80"],
+  [class~="bg-zinc-950/85"], [class~="bg-zinc-950/90"],
+  [class~="bg-zinc-950/95"]) {
+  background-color: var(--theme-bg-card) !important;
+  border-color: rgba(225, 232, 225, 0.12) !important;
+  box-shadow: 0 4px 16px -5px rgba(0, 0, 0, 0.20) !important;
 }
 
 .theme-dark .border-zinc-800,
 .theme-dark .border-zinc-700 {
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(225, 232, 225, 0.14) !important;
 }
 
-.theme-dark .bg-zinc-800 {
-  background-color: rgba(255, 255, 255, 0.06) !important;
+.theme-dark :is(.bg-zinc-800, .bg-zinc-700,
+  [class~="bg-zinc-800/30"], [class~="bg-zinc-800/40"],
+  [class~="bg-zinc-800/60"], [class~="bg-zinc-800/80"],
+  [class~="bg-zinc-700/60"]) {
+  background-color: var(--theme-bg-surface) !important;
 }
 
 /* Custom Scrollbar */
