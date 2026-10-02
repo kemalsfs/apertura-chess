@@ -59,7 +59,8 @@ export const RepertoireHeader: React.FC<RepertoireHeaderProps> = ({
         </div>
 
         {/* Tree Selector Pills & Action Buttons */}
-        <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
+        <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center">
+          <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 sm:flex-1 sm:pb-0">
           {repertoires.map(rep => {
             const isActive = rep.id === activeId;
             return (
@@ -86,11 +87,14 @@ export const RepertoireHeader: React.FC<RepertoireHeaderProps> = ({
             );
           })}
 
+          </div>
+
+          <div className="flex shrink-0 items-center justify-end gap-1.5">
           {/* Create New Tree Button */}
           {onCreateTree && (
             <button
               onClick={onCreateTree}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-zinc-800 hover:bg-amber-500/20 text-zinc-300 hover:text-amber-300 border border-zinc-700 hover:border-amber-500/40 rounded-xl text-xs font-bold transition cursor-pointer shrink-0"
+              className="flex min-h-11 items-center gap-1 px-2.5 py-1.5 bg-zinc-800 hover:bg-amber-500/20 text-zinc-300 hover:text-amber-300 border border-zinc-700 hover:border-amber-500/40 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 sm:min-h-0"
               title="Yeni Açılış Ağacı Ekle"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -100,7 +104,7 @@ export const RepertoireHeader: React.FC<RepertoireHeaderProps> = ({
 
           <button
             onClick={() => setIsBackupOpen(true)}
-            className="flex shrink-0 items-center gap-1 rounded-xl border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-semibold text-zinc-200 hover:text-amber-300"
+            className="flex min-h-11 shrink-0 items-center gap-1 rounded-xl border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-semibold text-zinc-200 hover:text-amber-300 sm:min-h-0"
             title="Repertuvar ve maç verilerini yedekle veya geri yükle"
           >
             <HardDriveDownload className="h-3.5 w-3.5" />
@@ -128,6 +132,7 @@ export const RepertoireHeader: React.FC<RepertoireHeaderProps> = ({
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           )}
+          </div>
         </div>
       </div>
 
