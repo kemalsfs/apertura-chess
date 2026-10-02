@@ -9,12 +9,11 @@ import { normalizeFen, STARTING_FEN, parseUci } from '../../utils/chessHelpers';
 import { ECO_BOOK } from '../../data/ecoBook';
 import { db } from '../../db/db';
 import { 
-  classifyMove, 
   MOVE_QUALITY_MAP, 
   type MoveQuality, 
   type ClassificationResult 
 } from '../../utils/moveClassifier';
-import { GameReviewService } from '../../services/gameReviewService';
+import { GameReviewService, REVIEW_MIN_DEPTH, classifyEvaluatedMove, type EvalPoint } from '../../services/gameReviewService';
 import { 
   X, 
   ChevronLeft, 
@@ -56,6 +55,80 @@ interface MoveStep {
   isInMasterBook: boolean;
 }
 
+export async function saveAnalyzedMoveToDefaultRepertoire(
+  game: ImportedGame,
+  prefix: Pick<MoveStep, 'fen' | 'prevFen' | 'normFen' | 'san' | 'uci' | 'from' | 'to' | 'turn' | 'moveNumber'>[]
+): Promise<void> {
+  if (prefix.length === 0) throw new Error('Eklenecek hamle bulunamadı.');
+  if (normalizeFen(prefix[0].prevFen) !== normalizeFen(STARTING_FEN)) {
+    throw new Error('Standart başlangıç dışındaki maçlar varsayılan repertuvara eklenemiyor.');
+  }
+
+  // Verify the complete path before touching the database.
+  const replay = new Chess();
+  for (const step of prefix) {
+    if (normalizeFen(step.prevFen) !== normalizeFen(replay.fen()) ||
+        step.turn !== replay.turn() || step.moveNumber !== replay.moveNumber()) {
+      throw new Error('Maç hamleleri başlangıçtan itibaren kesintisiz değil; kayıt yapılmadı.');
+    }
+    try {
+      const move = replay.move(step.san);
+      if (`${move.from}${move.to}${move.promotion ?? ''}` !== step.uci ||
+          step.from !== move.from || step.to !== move.to ||
+          normalizeFen(replay.fen()) !== step.normFen ||
+          normalizeFen(step.fen) !== step.normFen) {
+        throw new Error('Maç hamleleri beklenen konumla eşleşmiyor.');
+      }
+    } catch {
+      throw new Error('Maç hamleleri doğrulanamadı; kayıt yapılmadı.');
+    }
+  }
+
+  const repertoireId = game.userColor === 'white' ? 'default-white' : 'default-black';
+
+  await db.transaction('rw', db.nodes, async () => {
+    const defaultNodes = await db.nodes.where('repertoireId').equals(repertoireId).toArray();
+    let parentNode = defaultNodes.find(node =>
+      node.normalizedFen === normalizeFen(STARTING_FEN) && node.parentId === null
+    );
+
+    for (const step of prefix) {
+      const parentId = parentNode?.id ?? null;
+      let node = defaultNodes.find(candidate =>
+        candidate.normalizedFen === step.normFen &&
+        candidate.parentId === parentId && candidate.uci === step.uci
+      );
+
+      if (!node) {
+        node = {
+          id: crypto.randomUUID(),
+          repertoireId,
+          fen: step.fen,
+          normalizedFen: step.normFen,
+          san: step.san,
+          uci: step.uci,
+          from: step.from,
+          to: step.to,
+          turn: step.turn === 'w' ? 'b' : 'w',
+          moveNumber: step.moveNumber,
+          parentId,
+          childrenIds: [],
+          createdAt: Date.now(),
+          comment: `Maçtan eklendi: vs ${game.opponentUsername}`,
+        };
+        await db.nodes.add(node);
+        defaultNodes.push(node);
+      }
+
+      if (parentNode && !parentNode.childrenIds?.includes(node.id)) {
+        parentNode.childrenIds = [...(parentNode.childrenIds || []), node.id];
+        await db.nodes.update(parentNode.id, { childrenIds: parentNode.childrenIds });
+      }
+      parentNode = node;
+    }
+  });
+}
+
 export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
   game,
   whiteNodes,
@@ -65,7 +138,10 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
 }) => {
   const [currentPly, setCurrentPly] = useState<number>(0);
   const [savedSteps, setSavedSteps] = useState<Set<number>>(new Set());
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [stepClassifications, setStepClassifications] = useState<Map<number, ClassificationResult>>(new Map());
+  const [reviewedDepths, setReviewedDepths] = useState<Map<number, number>>(new Map());
   const [isFullAnalysisRunning, setIsFullAnalysisRunning] = useState<boolean>(false);
 
   // Parse PGN to sequential step list
@@ -81,7 +157,7 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
     }
 
     const history = tempChess.history({ verbose: true });
-    const replayChess = new Chess();
+    const replayChess = new Chess(tempChess.getHeaders().FEN || STARTING_FEN);
     const resultSteps: MoveStep[] = [];
 
     const userColor: RepertoireColor = game.userColor;
@@ -103,8 +179,8 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
       replayChess.move(h.san);
       
       const currentNormFen = normalizeFen(replayChess.fen());
-      const moveNumber = Math.floor(i / 2) + 1;
-      const turn: 'w' | 'b' = i % 2 === 0 ? 'w' : 'b';
+      const moveNumber = Number(prevFen.split(' ')[5]);
+      const turn: 'w' | 'b' = prevFen.split(' ')[1] === 'b' ? 'b' : 'w';
       const isUserMove = (userColor === 'white' && turn === 'w') || (userColor === 'black' && turn === 'b');
 
       // Check user repertoire match
@@ -135,7 +211,7 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
         moveNumber,
         turn,
         san: h.san,
-        uci: `${h.from}${h.to}`,
+        uci: `${h.from}${h.to}${h.promotion ?? ''}`,
         from: h.from,
         to: h.to,
         fen: replayChess.fen(),
@@ -152,10 +228,16 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
     return resultSteps;
   }, [game, whiteNodes, blackNodes]);
 
-  // Jump to start on game change & initialize opening book classifications
+  // Keep the selected move when repertoire maps refresh after a save.
   useEffect(() => {
     setCurrentPly(0);
     setSavedSteps(new Set());
+    setSaveError(null);
+  }, [game?.id, game?.pgn]);
+
+  // Initialize opening book classifications whenever the parsed steps change.
+  useEffect(() => {
+    setReviewedDepths(new Map());
 
     const initialMap = new Map<number, ClassificationResult>();
     steps.forEach((step) => {
@@ -169,42 +251,45 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
       }
     });
     setStepClassifications(initialMap);
-  }, [game, steps]);
+  }, [steps]);
 
   // Progressive Dedicated Game Review (Cloud + Local Stockfish Worker)
   useEffect(() => {
-    if (!steps || steps.length === 0) return;
+    if (steps.length === 0) {
+      setIsFullAnalysisRunning(false);
+      return;
+    }
 
+    let active = true;
     setIsFullAnalysisRunning(true);
     const reviewer = new GameReviewService();
-    const evalMap = new Map<number, { cp: number; bestMove?: string }>();
-    evalMap.set(0, { cp: 20 }); // Starting standard equal position
+    const evalMap = new Map<number, EvalPoint>();
 
     const positionsToAnalyze = [
+      { ply: 0, fen: steps[0].prevFen, turn: steps[0].turn },
       ...steps.map(s => ({ ply: s.ply, fen: s.fen, turn: s.turn === 'w' ? 'b' as const : 'w' as const }))
     ];
 
     reviewer.analyzePositions(positionsToAnalyze, (point) => {
-      evalMap.set(point.ply, { cp: point.cp, bestMove: point.bestMove });
+      if (!active) return;
+      evalMap.set(point.ply, point);
 
-      const step = steps.find(s => s.ply === point.ply);
+      const step = steps[point.ply - 1];
       if (step) {
-        const prevEval = evalMap.get(step.ply - 1) || { cp: 20 };
+        const prevEval = evalMap.get(step.ply - 1);
         const currEval = evalMap.get(step.ply);
 
-        if (currEval) {
-          const classification = classifyMove({
+        if (prevEval && currEval) {
+          const classification = classifyEvaluatedMove({
             prevFen: step.prevFen,
             playedUci: step.uci,
             playedSan: step.san,
             turn: step.turn,
-            bestMoveUci: prevEval.bestMove,
-            prevCp: prevEval.cp,
-            currentCp: currEval.cp,
             plyNumber: step.ply,
-          });
+          }, prevEval, currEval);
 
           if (classification) {
+            setReviewedDepths(prev => new Map(prev).set(step.ply, Math.min(prevEval.depth, currEval.depth)));
             setStepClassifications(prev => {
               const next = new Map(prev);
               next.set(step.ply, classification);
@@ -214,18 +299,20 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
         }
       }
     }).finally(() => {
-      setIsFullAnalysisRunning(false);
+      if (active) setIsFullAnalysisRunning(false);
     });
 
     return () => {
+      active = false;
       reviewer.cancel();
     };
   }, [steps]);
 
   // Current position FEN & Chess instance
   const currentStep = currentPly > 0 ? steps[currentPly - 1] : null;
-  const currentFen = currentStep ? currentStep.fen : STARTING_FEN;
-  const normFen = currentStep ? currentStep.normFen : normalizeFen(STARTING_FEN);
+  const initialFen = steps[0]?.prevFen ?? STARTING_FEN;
+  const currentFen = currentStep ? currentStep.fen : initialFen;
+  const normFen = currentStep ? currentStep.normFen : normalizeFen(initialFen);
 
   const currentChess = useMemo(() => {
     return new Chess(currentFen);
@@ -240,6 +327,8 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
   const goBack = () => setCurrentPly(prev => Math.max(0, prev - 1));
   const goForward = () => setCurrentPly(prev => Math.min(steps.length, prev + 1));
   const goToEnd = () => setCurrentPly(steps.length);
+
+  useEffect(() => { setSaveError(null); }, [currentPly]);
 
   // Keyboard arrow keys
   useEffect(() => {
@@ -310,6 +399,8 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
       const c = stepClassifications.get(s.ply);
       if (c) {
         badgeCounts[c.quality] = (badgeCounts[c.quality] || 0) + 1;
+      }
+      if (c && reviewedDepths.has(s.ply)) {
         if (s.turn === 'w') {
           whiteAccSum += c.accuracy;
           whiteCount++;
@@ -321,65 +412,38 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
     });
 
     return {
-      whiteAccuracy: whiteCount > 0 ? Math.round(whiteAccSum / whiteCount) : 0,
-      blackAccuracy: blackCount > 0 ? Math.round(blackAccSum / blackCount) : 0,
+      whiteAccuracy: whiteCount > 0 ? Math.round(whiteAccSum / whiteCount) : null,
+      blackAccuracy: blackCount > 0 ? Math.round(blackAccSum / blackCount) : null,
       badgeCounts,
       analyzedCount: whiteCount + blackCount,
+      minDepth: reviewedDepths.size > 0 ? Math.min(...reviewedDepths.values()) : null,
     };
-  }, [steps, stepClassifications]);
+  }, [steps, stepClassifications, reviewedDepths]);
 
   // Current move classification result
   const currentClassification = currentStep ? stepClassifications.get(currentStep.ply) : null;
 
   // Save current step to user's repertoire
   const handleSaveToRepertoire = async () => {
-    if (!currentStep || !game) return;
+    if (!currentStep || !game || isSaving) return;
 
-    const repertoireId = game.userColor === 'white' ? 'default-white' : 'default-black';
-    const repNodes = game.userColor === 'white' ? whiteNodes : blackNodes;
-
-    // Check parent
-    const prevFen = currentPly > 1 ? steps[currentPly - 2].fen : STARTING_FEN;
-    const prevNorm = normalizeFen(prevFen);
-
-    let parentId: string | null = null;
-    for (const node of repNodes.values()) {
-      if (node.normalizedFen === prevNorm) {
-        parentId = node.id;
-        break;
-      }
+    setSaveError(null);
+    setIsSaving(true);
+    try {
+      await saveAnalyzedMoveToDefaultRepertoire(game, steps.slice(0, currentPly));
+      setSavedSteps(prev => {
+        const next = new Set(prev);
+        steps.slice(0, currentPly).forEach(step => {
+          if (step.isUserMove) next.add(step.ply);
+        });
+        return next;
+      });
+      if (onRefreshRepertoire) onRefreshRepertoire();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Hamle kaydedilemedi. Tekrar deneyin.');
+    } finally {
+      setIsSaving(false);
     }
-
-    const newNodeId = crypto.randomUUID();
-    const newNode: RepertoireNode = {
-      id: newNodeId,
-      repertoireId,
-      fen: currentStep.fen,
-      normalizedFen: currentStep.normFen,
-      san: currentStep.san,
-      uci: `${currentStep.from}${currentStep.to}`,
-      from: currentStep.from,
-      to: currentStep.to,
-      turn: currentStep.turn === 'w' ? 'b' : 'w',
-      moveNumber: currentStep.moveNumber,
-      parentId,
-      childrenIds: [],
-      createdAt: Date.now(),
-      comment: `Maçtan eklendi: vs ${game.opponentUsername}`,
-    };
-
-    await db.nodes.put(newNode);
-
-    if (parentId) {
-      const parentNode = repNodes.get(parentId);
-      if (parentNode) {
-        const updatedChildren = Array.from(new Set([...(parentNode.childrenIds || []), newNodeId]));
-        await db.nodes.update(parentId, { childrenIds: updatedChildren });
-      }
-    }
-
-    setSavedSteps(prev => new Set(prev).add(currentPly));
-    if (onRefreshRepertoire) onRefreshRepertoire();
   };
 
   const formatScore = (val: number, type: 'cp' | 'mate') => {
@@ -456,18 +520,22 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
 
         {/* Game Review & Accuracy KPI Summary Bar */}
         <div className="px-3 sm:px-4 py-2 bg-zinc-950/90 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {/* White Accuracy */}
             <div className="flex items-center gap-1.5 bg-zinc-900 px-2.5 py-1 rounded-xl border border-zinc-800">
               <span className="text-[11px] text-zinc-400">⚪ Beyaz İsabet:</span>
-              <strong className="font-mono font-bold text-zinc-100">%{accuracyStats.whiteAccuracy}</strong>
+              <strong className="font-mono font-bold text-zinc-100">{accuracyStats.whiteAccuracy === null ? '—' : `%${accuracyStats.whiteAccuracy}`}</strong>
             </div>
 
             {/* Black Accuracy */}
             <div className="flex items-center gap-1.5 bg-zinc-900 px-2.5 py-1 rounded-xl border border-zinc-800">
               <span className="text-[11px] text-zinc-400">⚫ Siyah İsabet:</span>
-              <strong className="font-mono font-bold text-zinc-100">%{accuracyStats.blackAccuracy}</strong>
+              <strong className="font-mono font-bold text-zinc-100">{accuracyStats.blackAccuracy === null ? '—' : `%${accuracyStats.blackAccuracy}`}</strong>
             </div>
+            <span className="text-[10px] text-zinc-400 font-mono" title="İsabet yalnız önceki ve sonraki pozisyonları en az hedef derinlikte değerlendirilen hamleleri kapsar.">
+              Motor kapsamı: {accuracyStats.analyzedCount}/{steps.length} hamle · eşik d{REVIEW_MIN_DEPTH}
+              {accuracyStats.minDepth !== null && ` · min d${accuracyStats.minDepth}`}
+            </span>
           </div>
 
           {/* Badge Breakdown Pills */}
@@ -618,14 +686,14 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                   {currentStep.isUserMove && (
                     <button
                       onClick={handleSaveToRepertoire}
-                      disabled={currentStep.isInRepertoire || savedSteps.has(currentPly)}
+                      disabled={isSaving || savedSteps.has(currentPly)}
                       className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
-                        currentStep.isInRepertoire || savedSteps.has(currentPly)
+                        savedSteps.has(currentPly)
                           ? 'bg-zinc-800 text-amber-400 border border-amber-500/30'
                           : 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-md shadow-amber-500/20'
                       }`}
                     >
-                      {currentStep.isInRepertoire || savedSteps.has(currentPly) ? (
+                      {savedSteps.has(currentPly) ? (
                         <>
                           <Check className="w-3 h-3" />
                           <span>Kayıtlı</span>
@@ -633,12 +701,17 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                       ) : (
                         <>
                           <Plus className="w-3 h-3" />
-                          <span>Repertuvara Ekle</span>
+                          <span>Buraya Kadar Ekle</span>
                         </>
                       )}
                     </button>
                   )}
                 </div>
+                {saveError && (
+                  <p role="alert" className="text-[11px] text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-2">
+                    {saveError}
+                  </p>
+                )}
 
                 {/* Move Quality Badge Card */}
                 {currentClassification && (
@@ -727,7 +800,7 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
             <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 flex flex-col">
               <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 pb-1.5 border-b border-zinc-800">
                 <span>Maç Hamle Listesi</span>
-                <span className="font-mono text-zinc-500">Rozetli Analiz</span>
+                <span className="font-mono text-zinc-500">Kitap + Motor Rozetleri</span>
               </div>
 
               <div className="flex-1 max-h-[170px] overflow-y-auto pr-1 space-y-1 font-mono text-xs custom-scrollbar">

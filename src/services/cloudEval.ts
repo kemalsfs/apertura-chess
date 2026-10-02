@@ -33,10 +33,11 @@ export async function fetchCloudEval(
       return null;
     }
 
-    const depth = data.depth || 30;
+    const depth = data.depth;
+    if (!Number.isInteger(depth) || depth <= 0) return null;
     const topMoves: EngineMoveOption[] = [];
 
-    data.pvs.forEach((pv: any, index: number) => {
+    data.pvs.forEach((pv: any) => {
       const moves = pv.moves ? pv.moves.split(' ') : [];
       const uciMove = moves[0];
       if (!uciMove) return;
@@ -44,15 +45,16 @@ export async function fetchCloudEval(
       const from = uciMove.slice(0, 2);
       const to = uciMove.slice(2, 4);
 
-      let scoreType: 'cp' | 'mate' = 'cp';
-      let scoreValue = 0;
-
-      if (pv.mate !== undefined) {
+      let scoreType: 'cp' | 'mate';
+      let scoreValue: number;
+      if (Number.isInteger(pv.mate)) {
         scoreType = 'mate';
         scoreValue = pv.mate;
-      } else if (pv.cp !== undefined) {
+      } else if (Number.isFinite(pv.cp)) {
         scoreType = 'cp';
         scoreValue = pv.cp;
+      } else {
+        return;
       }
 
       topMoves.push({
@@ -62,7 +64,7 @@ export async function fetchCloudEval(
         type: scoreType,
         value: scoreValue,
         depth,
-        rank: index + 1,
+        rank: topMoves.length + 1,
       });
     });
 
