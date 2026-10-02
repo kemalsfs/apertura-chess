@@ -142,7 +142,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-amber-400 font-bold text-xs sm:text-sm">
                     <Sparkles className="w-4 h-4" />
-                    <span>Apertura v2.0 Ekosistemine Hoş Geldiniz</span>
+                    <span>Apertura'ya Hoş Geldiniz</span>
                   </div>
                   <button
                     onClick={() => {
@@ -156,17 +156,17 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                   </button>
                 </div>
                 <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                  Apertura; büyükusta teorisi, insan oyun psikolojisi ve derin yapay zeka analizini bir araya getiren yeni nesil bir satranç repertuvar ve düşünce platformudur.
+                  Açılış repertuvarınızı oluşturun, Lichess istatistiklerini ve motor önerilerini inceleyin, kaydettiğiniz varyantları çalışın.
                 </p>
               </div>
 
-              {/* Quick Navigation Hub (APK & Mobile Optimized) */}
+              {/* Quick Navigation Hub */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
                     🚀 Hızlı Sayfa Gezgini (Uygulama İçi Modlar)
                   </h3>
-                  <span className="text-[10px] text-amber-400 font-mono">APK Öncelikli Menü</span>
+                  <span className="text-[10px] text-amber-400 font-mono">Modlar</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -207,7 +207,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                         <ChevronRight className="w-3.5 h-3.5 text-zinc-600 group-hover:text-amber-400 transition" />
                       </div>
                       <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">
-                        7.854 Konumluk FIDE DAG, İnsan DB ve Duality tuzak tespiti.
+                        Açılış verileri, motor önerileri ve Duality karşılaştırması.
                       </p>
                     </div>
                   </button>
@@ -297,7 +297,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       </div>
                       <div>
                         <div className="text-xs font-bold text-zinc-100">Lichess API Bağlantısı</div>
-                        <div className="text-[10px] text-zinc-400">5.5 Milyar maç ve Cloud Eval için token bağla</div>
+                        <div className="text-[10px] text-zinc-400">İsteğe bağlı Lichess token'ını yönet</div>
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-zinc-500" />
@@ -431,7 +431,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                   <span>Gizlilik & Yerel Veri Güvenliği</span>
                 </h4>
                 <p className="text-zinc-400 leading-relaxed">
-                  Apertura, <strong>çevrimdışı öncelikli (offline-first)</strong> bir mimariyle geliştirilmiştir. Repertuvarlarınız, oyun analizleriniz, çalışma notlarınız ve kişisel ayarlarınız sunucularımıza değil, <strong>doğrudan kendi cihazınızın yerel depolama alanına (IndexedDB / LocalStorage)</strong> şifreli olarak kaydedilir. Kişisel verileriniz asla toplanmaz veya üçüncü taraflarla paylaşılmaz.
+                  Repertuvarlarınız, içe aktardığınız oyunlar ve ayarlarınız bu cihazın tarayıcı depolamasında (IndexedDB / LocalStorage) tutulur. Bu depolama uygulama tarafından şifrelenmez; tarayıcı verilerini temizlemek kayıtlarınızı silebilir. Lichess verileri ve bulut değerlendirmesi için ilgili dış servislere istek gönderilir.
                 </p>
               </div>
 
@@ -442,7 +442,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 </h4>
                 <div className="space-y-2 text-[11px] text-zinc-400">
                   <div>
-                    <strong className="text-zinc-200">Stockfish Chess Engine:</strong> GNU GPL v3 lisansı altında sunulan açık kaynaklı satranç analiz motoru (WebAssembly & Lichess Cloud Eval portu).
+                    <strong className="text-zinc-200">Stockfish Chess Engine:</strong> GNU GPL v3 lisanslı açık kaynak satranç motoru. Lichess Cloud Eval ayrı bir çevrimiçi hizmettir.
                   </div>
                   <div>
                     <strong className="text-zinc-200">Lichess Open Opening Database & API:</strong> Kamuya açık açılış verileri ve FIDE ECO teorisi atıfları.
@@ -467,7 +467,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 <Heart className="w-3 h-3 text-amber-500" /> J.A.R.V.I.S Mimari
               </span>
               <span className="font-mono text-zinc-600">•</span>
-              <span className="font-mono text-amber-400/80">v2.0.0 (APK Ready)</span>
+              <span className="font-mono text-amber-400/80">v2.0.0</span>
             </div>
           </div>
 

@@ -45,8 +45,8 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
   const totalSteps = 4;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in overflow-x-hidden">
-      <div className="bg-zinc-900 border border-amber-500/30 rounded-3xl max-w-lg w-full flex flex-col shadow-2xl overflow-hidden relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in overflow-x-hidden" role="dialog" aria-modal="true" aria-label="Apertura tanıtım turu">
+      <div className="bg-zinc-900 border border-amber-500/30 rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
         
         {/* Top Progress & Skip */}
         <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/70">
@@ -77,7 +77,7 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
         </div>
 
         {/* Step Content */}
-        <div className="p-5 sm:p-6 space-y-4 text-zinc-200">
+        <div className="p-5 sm:p-6 space-y-4 text-zinc-200 overflow-y-auto">
           
           {/* STEP 1: WELCOME & VISION */}
           {currentStep === 1 && (
@@ -87,20 +87,20 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
               </div>
               <div className="space-y-1">
                 <h3 className="text-lg font-extrabold text-zinc-100">
-                  Apertura v2.0'a Hoş Geldiniz!
+                  Apertura'ya Hoş Geldiniz!
                 </h3>
                 <p className="text-xs text-amber-400 font-medium">
                   Kişisel Satranç Düşünce Ortağınız ve Repertuvar Motorunuz
                 </p>
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
-                Apertura; yalnızca hamle ezberletmekle kalmaz, <strong>büyükusta teorisi</strong>, <strong>500M+ insan maçı alışkanlıkları</strong> ve <strong>derin Stockfish yapay zekası</strong> arasındaki taktiksel fırsatları görmenizi sağlar.
+                Açılış hamlelerini keşfedin, repertuvarınıza kaydedin ve Lichess istatistikleriyle motor değerlendirmelerini birlikte inceleyin.
               </p>
               <div className="p-3 rounded-2xl bg-zinc-950/60 border border-zinc-800 text-[11px] text-zinc-400 space-y-1">
                 <div className="font-semibold text-zinc-200">✨ Bu kısa turda neler keşfedeceksiniz:</div>
-                <div>• Duality Tuzak Dedektörü & Çift Yüzlü Analiz</div>
-                <div>• 5.5 Milyar Maçlık Canlı Lichess & Depth 50 Bulut Motoru</div>
-                <div>• Aralıklı Tekrar (SRS) ile Kalıcı Açılış Hakimiyeti</div>
+                <div>• Duality hamle karşılaştırması</div>
+                <div>• Lichess açılış verileri ve mevcutsa bulut değerlendirmesi</div>
+                <div>• Aralıklı tekrar (SRS) ile varyant çalışması</div>
               </div>
             </div>
           )}
@@ -113,21 +113,21 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
               </div>
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-zinc-100">
-                  ⚡ Duality & Taktiksel Tuzak Tespiti
+                  ⚡ Duality Hamle Karşılaştırması
                 </h3>
                 <p className="text-xs text-zinc-400">
-                  İnsan Psikolojisi vs. Motor Mantığı
+                  Oynanma sıklığı ve motor değerlendirmesi
                 </p>
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
-                Satranç masasının altında yer alan <strong>Duality Paneli</strong>; insanların en çok oynadığı ilk 3 hamle ile Stockfish motorunun en üstün gördüğü ilk 3 hamleyi eşzamanlı kıyaslar.
+                Satranç masasındaki <strong>Duality Paneli</strong>, Lichess'te sık oynanan hamleleri mevcut motor önerileriyle karşılaştırmanıza yardımcı olur. Sonuçlar seçilen konum için kullanılabilen verilere bağlıdır.
               </p>
               <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-1">
                 <div className="font-bold flex items-center gap-1.5 text-amber-400">
-                  <span>⚡ Taktiksel Fırsat Rozeti:</span>
+                  <span>⚡ İnceleme İşareti:</span>
                 </div>
                 <p className="text-[11px] text-zinc-300 leading-relaxed">
-                  İnsanların en popüler oynadığı hamle motorun en iyi hamlesinden ayrıştığında (örneğin rakip pratik bir tuzağa çekildiğinde), sistem sizi anında uyarır.
+                  Popüler bir hamle motorun önerisinden ayrışıyorsa panel bu farkı incelemeniz için işaretleyebilir. Bu işaret tek başına bir tuzak kanıtı değildir.
                 </p>
               </div>
             </div>
@@ -141,14 +141,14 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
               </div>
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-zinc-100">
-                  🔑 5.5 Milyar Maç & Depth 50 Bulut Motoru
+                  🔑 Canlı Açılış Verileri için Lichess Token'ı
                 </h3>
                 <p className="text-xs text-zinc-400">
-                  Ücretsiz Lichess API Bağlantısı ile Tam Güç
+                  Salt okunur (0-scope) token ile bağlanın
                 </p>
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
-                Lichess'in ücretsiz API anahtarını bağlayarak 20. hamleye kadar canlı usta/insan istatistiklerine ve <strong>0% CPU yükü ile Depth 50 Eval Bar'a</strong> anında erişebilirsiniz.
+                Canlı Lichess Opening Explorer verileri için salt okunur (0-scope) token gerekir. Token olmadan servis 401 hatası verebilir ve canlı açılış verileri gösterilemeyebilir. Bulut değerlendirmesi ayrı bir hizmettir; her konumda bulunmayabilir ve gerektiğinde yerel motor kullanılabilir.
               </p>
 
               {/* 1-Click Token Action */}
@@ -166,7 +166,7 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
                   </a>
                 </div>
                 <p className="text-[10px] text-zinc-400">
-                  Hiçbir kutucuğu işaretlemeden doğrudan en alttaki mavi <strong>Oluştur (Submit)</strong> butonuna basın.
+                  Bu kullanım için hiçbir izin kutusunu işaretlemeyin (0-scope). Token bu cihazın tarayıcı depolamasında tutulur.
                 </p>
 
                 <div className="space-y-1 pt-1">
@@ -175,7 +175,7 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
                   </label>
                   <div className="flex gap-1.5">
                     <input
-                      type="text"
+                      type="password"
                       value={tokenInput}
                       onChange={(e) => setTokenInput(e.target.value)}
                       placeholder="lip_XXXXXXXXXXXXXXXXXXXXXXXX"

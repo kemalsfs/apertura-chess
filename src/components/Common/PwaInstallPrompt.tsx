@@ -1,10 +1,15 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { Download, X, Share2, Smartphone } from 'lucide-react';
+import { Download, X, Share2 } from 'lucide-react';
 
-export const PwaInstallPrompt: React.FC = () => {
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+export const PwaInstallPrompt: React.FC<{ isBlocked?: boolean }> = ({ isBlocked = false }) => {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
     // If inside native Capacitor Android app or already in standalone PWA, do NOT show
@@ -26,39 +31,37 @@ export const PwaInstallPrompt: React.FC = () => {
 
     // Detect iOS Safari
     const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
-    setIsIOS(isIosDevice);
+    const isIosSafari = /iphone|ipad|ipod/.test(userAgent) && /safari/.test(userAgent) && !/crios|fxios|edgios/.test(userAgent);
+    setIsIOS(isIosSafari);
 
     // Listen for Android/Chrome beforeinstallprompt
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowPrompt(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
     // If iOS, show after 2 seconds
-    if (isIosDevice) {
+    if (isIosSafari) {
       const timer = setTimeout(() => setShowPrompt(true), 2000);
-      return () => clearTimeout(timer);
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+        clearTimeout(timer);
+      };
     }
 
-    // Default timer for desktop / other browsers
-    const defaultTimer = setTimeout(() => setShowPrompt(true), 3000);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-      clearTimeout(defaultTimer);
-    };
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
   }, []);
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
+      setShowPrompt(false);
       if (choiceResult.outcome === 'accepted') {
-        setShowPrompt(false);
+        localStorage.setItem('apertura_pwa_prompt_dismissed', 'true');
       }
       setDeferredPrompt(null);
     }
@@ -69,7 +72,7 @@ export const PwaInstallPrompt: React.FC = () => {
     localStorage.setItem('apertura_pwa_prompt_dismissed', 'true');
   };
 
-  if (!showPrompt) return null;
+  if (!showPrompt || isBlocked) return null;
 
   return (
     <div className="fixed bottom-16 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -87,7 +90,7 @@ export const PwaInstallPrompt: React.FC = () => {
                 </span>
               </h4>
               <p className="text-xs text-zinc-400">
-                Tarayıcı çubuğu olmadan tam ekran, çevrimdışı ve hızlı deneyim.
+                Desteklenen cihazlarda Apertura'yı ana ekranınızdan açın. Çevrimiçi veriler için bağlantı gerekir.
               </p>
             </div>
           </div>
@@ -107,23 +110,17 @@ export const PwaInstallPrompt: React.FC = () => {
               Safari'de alttaki <strong>Paylaş</strong> simgesine dokunun ve <strong>Ana Ekrana Ekle</strong>'yi seçin.
             </span>
           </div>
-        ) : (
+        ) : deferredPrompt ? (
           <div className="flex items-center gap-2">
-            {deferredPrompt && (
               <button
                 onClick={handleInstallClick}
                 className="flex-1 bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20"
               >
                 <Download className="w-3.5 h-3.5" />
-                Ana Ekrana Ekle
+                Uygulamayı Yükle
               </button>
-            )}
-            <div className="flex-1 bg-zinc-800 border border-zinc-700 text-zinc-300 text-[11px] py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1 text-center font-medium">
-              <Smartphone className="w-3.5 h-3.5 text-amber-400" />
-              <span>Google Play: Çok Yakında</span>
-            </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

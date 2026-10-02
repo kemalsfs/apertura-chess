@@ -130,7 +130,10 @@ export function App() {
         onTabChange={handleTabChange}
         currentThemeId={themeId}
         onSelectTheme={setThemeId}
-        onOpenOnboarding={() => setIsOnboardingOpen(true)}
+        onOpenOnboarding={() => {
+          setIsTourOpen(false);
+          setIsOnboardingOpen(true);
+        }}
       />
 
       {/* Main Content */}
@@ -294,7 +297,7 @@ export function App() {
 
       {/* Onboarding & Quick Hub Modal */}
       <OnboardingModal
-        isOpen={isOnboardingOpen}
+        isOpen={isOnboardingOpen && !isTourOpen}
         onClose={() => setIsOnboardingOpen(false)}
         onNavigateTab={handleTabChange}
         onOpenTokenModal={() => {
@@ -324,7 +327,7 @@ export function App() {
       />
 
       {/* PWA Add to Home Screen / Mobile Install Banner */}
-      <PwaInstallPrompt />
+      <PwaInstallPrompt isBlocked={isOnboardingOpen || isTourOpen || isCreateTreeModalOpen || pendingPromotion !== null} />
 
       {/* Mobile Bottom Navigation */}
       <MobileNav activeTab={activeTab} onTabChange={handleTabChange} />
