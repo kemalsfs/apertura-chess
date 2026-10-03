@@ -41,6 +41,11 @@ android {
         }
     }
     buildTypes {
+        debug {
+            // Install beside the Play build so device checks cannot replace or
+            // force removal of the user's existing app and local data.
+            applicationIdSuffix ".debug"
+        }
         release {
             if (releaseSigningConfigured) {
                 signingConfig signingConfigs.release
