@@ -74,7 +74,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                   Apertura
                 </h2>
                 <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold">
-                  v2.0.0
+                  v3.0.0
                 </span>
               </div>
               <p className="text-xs text-zinc-400">Kişisel İkinci Beyin & Satranç Düşünce Ortağı</p>
@@ -467,7 +467,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 <Heart className="w-3 h-3 text-amber-500" /> J.A.R.V.I.S Mimari
               </span>
               <span className="font-mono text-zinc-600">•</span>
-              <span className="font-mono text-amber-400/80">v2.0.0</span>
+              <span className="font-mono text-amber-400/80">v3.0.0</span>
             </div>
           </div>
 

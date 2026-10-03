@@ -39,14 +39,14 @@ export const Header: React.FC<HeaderProps> = ({
         <div
           onClick={onOpenOnboarding}
           className="flex items-center gap-3 cursor-pointer group select-none"
-          title="Apertura v2.0 Rehberi & Hızlı Menü (Tıkla)"
+          title="Apertura v3.0 Rehberi & Hızlı Menü (Tıkla)"
         >
           <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-lg group-hover:scale-110 group-hover:bg-amber-500/30 transition shadow-inner">
             ♟
           </div>
           <div>
             <h1 className="text-sm font-bold text-zinc-100 flex items-center gap-1.5 group-hover:text-amber-400 transition">
-              Apertura <span className="text-amber-400 font-normal text-xs bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/30">v2.0</span>
+              Apertura <span className="text-amber-400 font-normal text-xs bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/30">v3.0</span>
             </h1>
             <p className="text-[10px] text-zinc-500 font-mono flex items-center gap-1">
               <span>Hızlı Menü & Rehber</span>
