@@ -1,5 +1,19 @@
 apply plugin: 'com.android.application'
 
+// Supply these through ~/.gradle/gradle.properties or environment variables.
+// Keep signing credentials out of tracked project files.
+def releaseSigningValue = { propertyName, environmentName ->
+    providers.gradleProperty(propertyName)
+        .orElse(providers.environmentVariable(environmentName))
+        .orNull
+}
+def releaseKeystorePath = releaseSigningValue('aperturaReleaseKeystore', 'APERTURA_RELEASE_KEYSTORE')
+def releaseStorePassword = releaseSigningValue('aperturaReleaseStorePassword', 'APERTURA_RELEASE_STORE_PASSWORD')
+def releaseKeyAlias = releaseSigningValue('aperturaReleaseKeyAlias', 'APERTURA_RELEASE_KEY_ALIAS')
+def releaseKeyPassword = releaseSigningValue('aperturaReleaseKeyPassword', 'APERTURA_RELEASE_KEY_PASSWORD')
+def releaseSigningConfigured = [releaseKeystorePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword]
+    .every { it != null && !it.isBlank() }
+
 android {
     namespace = "com.aperturachess.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -17,19 +31,35 @@ android {
         }
     }
     signingConfigs {
-        release {
-            storeFile file('../../apertura-release-key.jks')
-            storePassword 'apertura2026'
-            keyAlias 'apertura'
-            keyPassword 'apertura2026'
+        if (releaseSigningConfigured) {
+            release {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
         }
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    def releasePackagingRequested = graph.allTasks.any { task ->
+        task.project == project && task.name in ['assembleRelease', 'bundleRelease', 'packageRelease', 'signReleaseBundle']
+    }
+    if (releasePackagingRequested && !releaseSigningConfigured) {
+        throw new GradleException('Release signing requires aperturaReleaseKeystore, aperturaReleaseStorePassword, aperturaReleaseKeyAlias, and aperturaReleaseKeyPassword in user Gradle properties or their APERTURA_RELEASE_* environment equivalents.')
+    }
+    if (releasePackagingRequested && !file(releaseKeystorePath).isFile()) {
+        throw new GradleException('Release signing keystore file was not found at the configured path.')
     }
 }
 
