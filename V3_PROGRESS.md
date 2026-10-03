@@ -20,6 +20,6 @@ Updated: 2026-10-03. Working branch: `codex/apertura-v3`.
 ## Open acceptance and risks
 
 - Test system navigation overlap, launcher icon after install/update, JSON export/import and long analysis on the affected Samsung device. Its model and Android version are not known.
-- Seven source lint warnings remain in game analysis and drill. The production JS chunk is about 2.13 MB.
+- Two source lint warnings remain in the asynchronous game review effects. They were left in place to avoid changing the review state flow without dedicated UI coverage. The production JS chunk is about 2.13 MB; approximately 1.51 MB is the embedded 7,854-position ECO book. Its gzip size is about 312 KB overall. Lazy loading Atlas, Drill and Analytics is a candidate optimization, pending measured startup impact.
 - Release signing secrets were removed from tracked source, but an old Git commit contains them. Treat the upload key as potentially exposed and resolve its status before distributing a release package. The local keystore has been retained; no signing secrets are stored in this note.
 - Android WebView behavior, OS-level PWA install and version-to-version PWA updates have not been verified. Play Store closed testing is outside this checkpoint.
