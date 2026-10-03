@@ -31,6 +31,15 @@ export interface DrillStats {
   roundPassedLines: number;
 }
 
+/** Evaluate each attempt from the displayed position; a rejected move must not mutate it. */
+export function getDrillMoveAttempt(fen: string, from: string, to: string, promotion?: string) {
+  try {
+    return new Chess(fen).move({ from, to, promotion: promotion || undefined });
+  } catch {
+    return null;
+  }
+}
+
 export function useDrillSession(
   activeRepertoireId: string, 
   orientation: RepertoireColor,
@@ -316,11 +325,7 @@ export function useDrillSession(
       const expectedNode = activeLine[stepIndex];
 
       try {
-        const moveAttempt = chess.move({
-          from,
-          to,
-          promotion: promotion || undefined,
-        });
+        const moveAttempt = getDrillMoveAttempt(currentFen, from, to, promotion);
 
         if (!moveAttempt) return false;
 
@@ -475,7 +480,7 @@ export function useDrillSession(
         return false;
       }
     },
-    [isUserTurn, stepIndex, activeLine, chess, attemptsOnCurrentStep, hasFailedCurrentLine, advanceToNextLine]
+    [isUserTurn, stepIndex, activeLine, currentFen, attemptsOnCurrentStep, hasFailedCurrentLine, advanceToNextLine]
   );
 
   // Restart entire session
