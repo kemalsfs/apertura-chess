@@ -84,9 +84,13 @@ export async function saveAnalyzedMoveToDefaultRepertoire(
     }
   }
 
-  const repertoireId = game.userColor === 'white' ? 'default-white' : 'default-black';
-
-  await db.transaction('rw', db.nodes, async () => {
+  await db.transaction('rw', db.repertoires, db.nodes, async () => {
+    const defaults = (await db.repertoires.where('color').equals(game.userColor).toArray())
+      .filter(repertoire => repertoire.isDefault);
+    if (defaults.length !== 1) {
+      throw new Error('Bu renk için tek bir varsayılan repertuvar bulunamadı. Önce varsayılan ağacı seçin.');
+    }
+    const repertoireId = defaults[0].id;
     const defaultNodes = await db.nodes.where('repertoireId').equals(repertoireId).toArray();
     let parentNode = defaultNodes.find(node =>
       node.normalizedFen === normalizeFen(STARTING_FEN) && node.parentId === null

@@ -35,6 +35,10 @@ describe('analysis move saving', () => {
     db.close();
     await Dexie.delete('AperturaChessDB');
     await db.open();
+    await db.repertoires.bulkAdd([
+      { id: 'default-white', name: 'Beyaz', color: 'white', isDefault: true, createdAt: 1, updatedAt: 1 },
+      { id: 'default-black', name: 'Siyah', color: 'black', isDefault: true, createdAt: 1, updatedAt: 1 },
+    ]);
   });
 
   afterEach(async () => {
@@ -98,6 +102,26 @@ describe('analysis move saving', () => {
     await saveAnalyzedMoveToDefaultRepertoire({ ...game, userColor: 'white' }, makePrefix('e4'));
     expect(await db.nodes.where('repertoireId').equals('default-white').first())
       .toMatchObject({ san: 'e4', parentId: null });
+  });
+
+  it('saves into the actual white default after the original default tree was deleted', async () => {
+    await db.repertoires.delete('default-white');
+    await db.repertoires.add({
+      id: 'my-white', name: 'Benim beyaz ağacım', color: 'white',
+      isDefault: true, createdAt: 2, updatedAt: 2,
+    });
+
+    await saveAnalyzedMoveToDefaultRepertoire({ ...game, userColor: 'white' }, makePrefix('e4'));
+    expect((await db.nodes.where('repertoireId').equals('my-white').first())?.san).toBe('e4');
+    expect(await db.nodes.where('repertoireId').equals('default-white').count()).toBe(0);
+  });
+
+  it('refuses to create an orphan when the color has no default tree', async () => {
+    await db.repertoires.delete('default-white');
+    await expect(saveAnalyzedMoveToDefaultRepertoire(
+      { ...game, userColor: 'white' }, makePrefix('e4')
+    )).rejects.toThrow('varsayılan repertuvar bulunamadı');
+    expect(await db.nodes.count()).toBe(0);
   });
 
   it('rejects a nonstandard PGN starting position without changing the database', async () => {
