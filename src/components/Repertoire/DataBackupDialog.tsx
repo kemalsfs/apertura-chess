@@ -51,8 +51,8 @@ export const DataBackupDialog: React.FC<DataBackupDialogProps> = ({ onClose }) =
     try {
       const result = await mergeUserBackup(pendingBackup);
       setPendingBackup(null);
-      setStatus(`${result.addedRepertoires} ağaç, ${result.addedNodes} hamle, ${result.addedGames} maç eklendi. ${result.skippedExisting} mevcut kayıt korundu.`);
-      if (result.addedRepertoires + result.addedNodes + result.addedGames > 0) {
+      setStatus(`${result.addedRepertoires} ağaç, ${result.addedNodes} hamle, ${result.addedGames} maç eklendi; ${result.repairedLinks} bağlantı onarıldı. ${result.skippedExisting} mevcut kayıt korundu.`);
+      if (result.addedRepertoires + result.addedNodes + result.addedGames + result.repairedLinks > 0) {
         setTimeout(() => window.location.reload(), 1800);
       }
     } catch (error) {
@@ -83,7 +83,7 @@ export const DataBackupDialog: React.FC<DataBackupDialogProps> = ({ onClose }) =
         </button>
 
         <div className="border-t border-zinc-700 pt-4">
-          <p className="mb-2 text-xs text-zinc-400">Yedeği içeri aktarırken yalnız eksik kayıtlar eklenir. Mevcut kayıtlar silinmez veya değiştirilmez.</p>
+          <p className="mb-2 text-xs text-zinc-400">Yedeği içeri aktarırken eksik kayıtlar eklenir ve kopuk hamle bağlantıları onarılır. Mevcut kayıtlar silinmez.</p>
           <input ref={fileInput} type="file" accept=".json,application/json" onChange={handleFile}
             className="sr-only" aria-label="Apertura JSON yedeği seç" />
           <button onClick={() => fileInput.current?.click()} disabled={busy}
@@ -95,7 +95,7 @@ export const DataBackupDialog: React.FC<DataBackupDialogProps> = ({ onClose }) =
         {pendingBackup && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-zinc-200">
             <p>Seçilen yedek: {pendingBackup.repertoires.length} ağaç, {pendingBackup.nodes.length} hamle, {pendingBackup.games.length} maç.</p>
-            <p className="mt-1 text-zinc-400">Aynı kimlikteki mevcut kayıtlar korunur. İşlem atomiktir; hata olursa yeni kayıtlar eklenmez.</p>
+            <p className="mt-1 text-zinc-400">Aynı kimlikteki kayıtların içeriği korunur; eksik ağaç bağlantıları onarılabilir. İşlem atomiktir; hata olursa değişiklik yapılmaz.</p>
             <button onClick={handleRestore} disabled={busy}
               className="mt-3 w-full rounded-lg bg-amber-500 px-3 py-2 font-bold text-zinc-950 hover:bg-amber-400 disabled:opacity-50">
               Eksik kayıtları geri yükle

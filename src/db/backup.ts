@@ -16,6 +16,7 @@ export interface RestoreResult {
   addedNodes: number;
   addedGames: number;
   skippedExisting: number;
+  repairedLinks: number;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -107,10 +108,43 @@ export function parseUserBackup(json: string): AperturaBackup {
   if (backup.nodes.some(node => !repIds.has(node.repertoireId))) {
     throw new Error('Yedekte ağacı bulunmayan hamle var.');
   }
+  const nodeById = new Map(backup.nodes.map(node => [node.id, node]));
+  for (const node of backup.nodes) {
+    const seenParents = new Set<string>();
+    let parent: RepertoireNode | undefined = node;
+    while (parent?.parentId) {
+      if (!nodeById.has(parent.parentId)) {
+        throw new Error('Yedekte ebeveyni bulunmayan hamle var.');
+      }
+      if (seenParents.has(parent.parentId)) {
+        throw new Error('Yedekte döngülü hamle ağacı var.');
+      }
+      seenParents.add(parent.parentId);
+      parent = nodeById.get(parent.parentId);
+      if (parent?.repertoireId !== node.repertoireId) {
+        throw new Error('Yedekte farklı ağaçlara bağlanan hamle var.');
+      }
+    }
+  }
+  // A stale childrenIds list can also make traversal recurse forever even when
+  // parentId itself is acyclic. Check that directed graph independently.
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  function visit(id: string): void {
+    if (visiting.has(id)) throw new Error('Yedekte döngülü hamle ağacı var.');
+    if (visited.has(id)) return;
+    visiting.add(id);
+    for (const childId of nodeById.get(id)?.childrenIds ?? []) {
+      if (nodeById.has(childId)) visit(childId);
+    }
+    visiting.delete(id);
+    visited.add(id);
+  }
+  for (const node of backup.nodes) visit(node.id);
   return backup;
 }
 
-/** Merge is intentionally non-destructive: existing IDs win, no rows are deleted. */
+/** Existing IDs win; missing parent-child links are repaired without deleting rows. */
 export async function mergeUserBackup(backup: AperturaBackup): Promise<RestoreResult> {
   return db.transaction('rw', db.repertoires, db.nodes, db.games, async () => {
     const [presentRepertoires, presentNodes, presentGames] = await Promise.all([
@@ -124,12 +158,33 @@ export async function mergeUserBackup(backup: AperturaBackup): Promise<RestoreRe
     if (missingRepertoires.length) await db.repertoires.bulkAdd(missingRepertoires);
     if (missingNodes.length) await db.nodes.bulkAdd(missingNodes);
     if (missingGames.length) await db.games.bulkAdd(missingGames);
+
+    // A restored child may have an already-present parent whose local childrenIds
+    // no longer lists it. Without this edge, the node exists but is invisible in
+    // the repertoire tree and drills. Preserve every existing child reference.
+    let repairedLinks = 0;
+    const restoredNodes = await db.nodes.bulkGet(backup.nodes.map(row => row.id));
+    for (const child of restoredNodes) {
+      if (!child?.parentId) continue;
+      const parent = await db.nodes.get(child.parentId);
+      if (!parent || parent.repertoireId !== child.repertoireId) {
+        throw new Error('Yedekte ebeveyni eksik veya farklı ağaçta olan hamle var.');
+      }
+      if (!parent.childrenIds.includes(child.id)) {
+        await db.nodes.update(parent.id, {
+          childrenIds: [...parent.childrenIds, child.id],
+        });
+        parent.childrenIds.push(child.id);
+        repairedLinks++;
+      }
+    }
     return {
       addedRepertoires: missingRepertoires.length,
       addedNodes: missingNodes.length,
       addedGames: missingGames.length,
       skippedExisting: backup.repertoires.length + backup.nodes.length + backup.games.length
         - missingRepertoires.length - missingNodes.length - missingGames.length,
+      repairedLinks,
     };
   });
 }

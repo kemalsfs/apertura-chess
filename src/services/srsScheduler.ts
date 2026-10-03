@@ -95,6 +95,7 @@ export function extractRepertoireLines(nodes: Map<string, RepertoireNode>): Repe
   const lines: RepertoireNode[][] = [];
 
   function traverse(currentNode: RepertoireNode, currentPath: RepertoireNode[]) {
+    if (currentPath.some(node => node.id === currentNode.id)) return;
     const path = [...currentPath, currentNode];
 
     if (!currentNode.childrenIds || currentNode.childrenIds.length === 0) {

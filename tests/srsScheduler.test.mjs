@@ -30,6 +30,11 @@ test('short lines only enter a drill when a player move remains', () => {
   assert.equal(scheduler.isTrainableLine(two, 'black'), true);
 });
 
+test('cyclic child references cannot recurse indefinitely during drill extraction', () => {
+  const root = { ...node('root'), childrenIds: ['root'] };
+  assert.deepEqual(scheduler.extractRepertoireLines(new Map([[root.id, root]])), []);
+});
+
 test('empty due and weak filters stay empty', () => {
   const future = Date.now() + 86_400_000;
   const strongLine = [node('reviewed', {
