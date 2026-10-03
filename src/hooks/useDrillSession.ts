@@ -215,11 +215,6 @@ export function useDrillSession(
     if (stepIndex < 0 || stepIndex >= activeLine.length) return;
 
     if (!isUserTurn) {
-      setFeedback({
-        status: 'opponent_turn',
-        message: 'Rakip oynuyor...',
-      });
-
       const opponentMoveNode = activeLine[stepIndex];
       autoMoveTimerRef.current = setTimeout(() => {
         try {
@@ -517,6 +512,11 @@ export function useDrillSession(
     []
   );
 
+  const displayedFeedback: DrillFeedback = !isLoading && !isSessionFinished && lines.length > 0 &&
+    stepIndex >= 0 && stepIndex < activeLine.length && !isUserTurn
+    ? { status: 'opponent_turn', message: 'Rakip oynuyor...' }
+    : feedback;
+
   return {
     allExtractedLines,
     skippedUntrainableLines,
@@ -528,7 +528,7 @@ export function useDrillSession(
     chess,
     lastMove,
     arrows,
-    feedback,
+    feedback: displayedFeedback,
     stats,
     filter,
     isUserTurn,

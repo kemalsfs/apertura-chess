@@ -6,7 +6,7 @@ import type { ImportedGame } from '../../types/analytics';
 import type { RepertoireNode } from '../../types/chess';
 import { normalizeFen } from '../../utils/chessHelpers';
 import { db } from '../../db/db';
-import { saveAnalyzedMoveToDefaultRepertoire } from './GameAnalysisModal';
+import { saveAnalyzedMoveToDefaultRepertoire } from './gameAnalysisSave';
 
 const game: ImportedGame = {
   id: 'game', platform: 'pgn_file', userColor: 'black',

@@ -143,6 +143,7 @@ export const AnalyticsView: React.FC = () => {
       {/* Interactive Game Analysis Modal */}
       {selectedGame && (
         <GameAnalysisModal
+          key={`${selectedGame.id}:${selectedGame.pgn}`}
           game={selectedGame}
           whiteNodes={selectedGame.userColor === 'white' ? selectedNodes ?? new Map() : new Map()}
           blackNodes={selectedGame.userColor === 'black' ? selectedNodes ?? new Map() : new Map()}

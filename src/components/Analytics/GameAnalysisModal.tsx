@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Chess } from 'chess.js';
 import type { ImportedGame } from '../../types/analytics';
 import type { RepertoireNode, RepertoireColor, DrawShape } from '../../types/chess';
@@ -7,7 +7,7 @@ import { EvalBar } from '../Chessboard/EvalBar';
 import { useEvaluation } from '../../hooks/useEvaluation';
 import { normalizeFen, STARTING_FEN, parseUci } from '../../utils/chessHelpers';
 import { ECO_BOOK } from '../../data/ecoBook';
-import { db } from '../../db/db';
+import { saveAnalyzedMoveToDefaultRepertoire } from './gameAnalysisSave';
 import { 
   MOVE_QUALITY_MAP, 
   type MoveQuality, 
@@ -53,84 +53,6 @@ interface MoveStep {
   expectedRepertoireSan?: string;
   isDeviationStep: boolean;
   isInMasterBook: boolean;
-}
-
-export async function saveAnalyzedMoveToDefaultRepertoire(
-  game: ImportedGame,
-  prefix: Pick<MoveStep, 'fen' | 'prevFen' | 'normFen' | 'san' | 'uci' | 'from' | 'to' | 'turn' | 'moveNumber'>[]
-): Promise<void> {
-  if (prefix.length === 0) throw new Error('Eklenecek hamle bulunamadı.');
-  if (normalizeFen(prefix[0].prevFen) !== normalizeFen(STARTING_FEN)) {
-    throw new Error('Standart başlangıç dışındaki maçlar varsayılan repertuvara eklenemiyor.');
-  }
-
-  // Verify the complete path before touching the database.
-  const replay = new Chess();
-  for (const step of prefix) {
-    if (normalizeFen(step.prevFen) !== normalizeFen(replay.fen()) ||
-        step.turn !== replay.turn() || step.moveNumber !== replay.moveNumber()) {
-      throw new Error('Maç hamleleri başlangıçtan itibaren kesintisiz değil; kayıt yapılmadı.');
-    }
-    try {
-      const move = replay.move(step.san);
-      if (`${move.from}${move.to}${move.promotion ?? ''}` !== step.uci ||
-          step.from !== move.from || step.to !== move.to ||
-          normalizeFen(replay.fen()) !== step.normFen ||
-          normalizeFen(step.fen) !== step.normFen) {
-        throw new Error('Maç hamleleri beklenen konumla eşleşmiyor.');
-      }
-    } catch {
-      throw new Error('Maç hamleleri doğrulanamadı; kayıt yapılmadı.');
-    }
-  }
-
-  await db.transaction('rw', db.repertoires, db.nodes, async () => {
-    const defaults = (await db.repertoires.where('color').equals(game.userColor).toArray())
-      .filter(repertoire => repertoire.isDefault);
-    if (defaults.length !== 1) {
-      throw new Error('Bu renk için tek bir varsayılan repertuvar bulunamadı. Önce varsayılan ağacı seçin.');
-    }
-    const repertoireId = defaults[0].id;
-    const defaultNodes = await db.nodes.where('repertoireId').equals(repertoireId).toArray();
-    let parentNode = defaultNodes.find(node =>
-      node.normalizedFen === normalizeFen(STARTING_FEN) && node.parentId === null
-    );
-
-    for (const step of prefix) {
-      const parentId = parentNode?.id ?? null;
-      let node = defaultNodes.find(candidate =>
-        candidate.normalizedFen === step.normFen &&
-        candidate.parentId === parentId && candidate.uci === step.uci
-      );
-
-      if (!node) {
-        node = {
-          id: crypto.randomUUID(),
-          repertoireId,
-          fen: step.fen,
-          normalizedFen: step.normFen,
-          san: step.san,
-          uci: step.uci,
-          from: step.from,
-          to: step.to,
-          turn: step.turn === 'w' ? 'b' : 'w',
-          moveNumber: step.moveNumber,
-          parentId,
-          childrenIds: [],
-          createdAt: Date.now(),
-          comment: `Maçtan eklendi: vs ${game.opponentUsername}`,
-        };
-        await db.nodes.add(node);
-        defaultNodes.push(node);
-      }
-
-      if (parentNode && !parentNode.childrenIds?.includes(node.id)) {
-        parentNode.childrenIds = [...(parentNode.childrenIds || []), node.id];
-        await db.nodes.update(parentNode.id, { childrenIds: parentNode.childrenIds });
-      }
-      parentNode = node;
-    }
-  });
 }
 
 export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
@@ -232,13 +154,6 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
     return resultSteps;
   }, [game, whiteNodes, blackNodes]);
 
-  // Keep the selected move when repertoire maps refresh after a save.
-  useEffect(() => {
-    setCurrentPly(0);
-    setSavedSteps(new Set());
-    setSaveError(null);
-  }, [game?.id, game?.pgn]);
-
   // Initialize opening book classifications whenever the parsed steps change.
   useEffect(() => {
     setReviewedDepths(new Map());
@@ -327,26 +242,28 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
   const orientation: RepertoireColor = game?.userColor || 'white';
 
   // Navigation Handlers
-  const goToStart = () => setCurrentPly(0);
-  const goBack = () => setCurrentPly(prev => Math.max(0, prev - 1));
-  const goForward = () => setCurrentPly(prev => Math.min(steps.length, prev + 1));
-  const goToEnd = () => setCurrentPly(steps.length);
-
-  useEffect(() => { setSaveError(null); }, [currentPly]);
+  const navigateToPly = useCallback((next: number | ((previous: number) => number)) => {
+    setCurrentPly(next);
+    setSaveError(null);
+  }, []);
+  const goToStart = () => navigateToPly(0);
+  const goBack = () => navigateToPly(prev => Math.max(0, prev - 1));
+  const goForward = () => navigateToPly(prev => Math.min(steps.length, prev + 1));
+  const goToEnd = () => navigateToPly(steps.length);
 
   // Keyboard arrow keys
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') goBack();
-      if (e.key === 'ArrowRight') goForward();
-      if (e.key === 'Home') goToStart();
-      if (e.key === 'End') goToEnd();
+      if (e.key === 'ArrowLeft') navigateToPly(prev => Math.max(0, prev - 1));
+      if (e.key === 'ArrowRight') navigateToPly(prev => Math.min(steps.length, prev + 1));
+      if (e.key === 'Home') navigateToPly(0);
+      if (e.key === 'End') navigateToPly(steps.length);
       if (e.key === 'Escape') onClose();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [steps.length]);
+  }, [steps.length, navigateToPly, onClose]);
 
   // Master book moves for current position
   const masterMoves = useMemo(() => {
@@ -823,7 +740,7 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                       {/* White Move */}
                       {whiteStep && (
                         <button
-                          onClick={() => setCurrentPly(whiteStep.ply)}
+                          onClick={() => navigateToPly(whiteStep.ply)}
                           className={`flex-1 text-left px-2 py-1 rounded-lg transition cursor-pointer flex items-center justify-between ${
                             currentPly === whiteStep.ply
                               ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30'
@@ -846,7 +763,7 @@ export const GameAnalysisModal: React.FC<GameAnalysisModalProps> = ({
                       {/* Black Move */}
                       {blackStep && (
                         <button
-                          onClick={() => setCurrentPly(blackStep.ply)}
+                          onClick={() => navigateToPly(blackStep.ply)}
                           className={`flex-1 text-left px-2 py-1 rounded-lg transition cursor-pointer flex items-center justify-between ${
                             currentPly === blackStep.ply
                               ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30'
