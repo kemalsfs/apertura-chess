@@ -1,64 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../../db/db';
-import type { ImportedGame, RepertoireMatchResult } from '../../types/analytics';
-import type { Repertoire, RepertoireNode } from '../../types/chess';
-import { calculateOverallAnalytics, matchGameWithRepertoire } from '../../services/repertoireMatcher';
+import type { ImportedGame } from '../../types/analytics';
+import type { RepertoireNode } from '../../types/chess';
+import { calculateAnalyticsForTrees, selectBestRepertoireMatch, type RepertoireTree } from './analyticsCalculations';
 import { AnalyticsSummaryCards } from './AnalyticsSummaryCards';
 import { OpeningPerformanceTable } from './OpeningPerformanceTable';
 import { RecentGamesList } from './RecentGamesList';
 import { GameImportModal } from './GameImportModal';
 import { GameAnalysisModal } from './GameAnalysisModal';
 import { Globe, RefreshCw, BarChart2 } from 'lucide-react';
-
-interface RepertoireTree {
-  repertoire: Repertoire;
-  nodes: Map<string, RepertoireNode>;
-}
-
-/** Compare each real tree independently so duplicate opening moves do not hide a sibling tree. */
-export function selectBestRepertoireMatch(
-  game: ImportedGame,
-  trees: RepertoireTree[]
-): { matchResult: RepertoireMatchResult; tree?: RepertoireTree } {
-  let best: { matchResult: RepertoireMatchResult; tree?: RepertoireTree } = {
-    matchResult: { matchedCount: 0, whoDeviated: 'none' },
-  };
-
-  for (const tree of trees) {
-    if (tree.repertoire.color !== game.userColor || tree.nodes.size === 0) continue;
-    const matchResult = matchGameWithRepertoire(game, tree.nodes);
-    const complete = matchResult.whoDeviated === 'none' && matchResult.matchedCount > 0;
-    const bestComplete = best.matchResult.whoDeviated === 'none' && best.matchResult.matchedCount > 0;
-
-    // A line ending in the repertoire is covered, even if another tree continues and deviates.
-    // For equal coverage, prefer the longest line; the sorted tree order breaks remaining ties.
-    if (!best.tree || (complete && !bestComplete) ||
-        (complete === bestComplete && matchResult.matchedCount > best.matchResult.matchedCount)) {
-      best = { matchResult, tree };
-    }
-  }
-
-  return best;
-}
-
-export function calculateAnalyticsForTrees(games: ImportedGame[], trees: RepertoireTree[]) {
-  // Results and win rates are independent of repertoire matching. Rebuild every
-  // deviation count from the best matching real tree for each individual game.
-  const base = calculateOverallAnalytics(games, new Map(), new Map());
-  const statsByKey = new Map(base.openingStats.map(stat => [
-    `${stat.color}_${stat.eco}_${stat.name}`, stat,
-  ]));
-  const processedGames = games.map(game => {
-    const { matchResult } = selectBestRepertoireMatch(game, trees);
-    const ecoKey = game.eco || (game.openingName ? game.openingName.slice(0, 3) : 'Genel');
-    const openingName = game.openingName || (game.eco ? `ECO ${game.eco}` : 'Bilinmeyen Açılış');
-    const stat = statsByKey.get(`${game.userColor}_${ecoKey}_${openingName}`);
-    if (stat && matchResult.whoDeviated === 'user') stat.userDeviations++;
-    else if (stat && matchResult.whoDeviated === 'opponent') stat.opponentDeviations++;
-    return { ...game, matchResult };
-  });
-  return { overall: base.overall, openingStats: base.openingStats, processedGames };
-}
 
 export const AnalyticsView: React.FC = () => {
   const [games, setGames] = useState<ImportedGame[]>([]);
@@ -68,7 +18,6 @@ export const AnalyticsView: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const loadData = useCallback(async () => {
-    setIsLoading(true);
     const [allGames, allRepertoires, allNodes] = await db.transaction(
       'r', db.games, db.repertoires, db.nodes,
       async () => Promise.all([
@@ -95,8 +44,14 @@ export const AnalyticsView: React.FC = () => {
     setIsLoading(false);
   }, []);
 
+  const refreshData = useCallback(() => {
+    setIsLoading(true);
+    void loadData();
+  }, [loadData]);
+
   useEffect(() => {
-    loadData();
+    const timer = setTimeout(() => { void loadData(); }, 0);
+    return () => clearTimeout(timer);
   }, [loadData]);
 
   const { overall, openingStats, processedGames } = useMemo(
@@ -125,7 +80,7 @@ export const AnalyticsView: React.FC = () => {
         {/* Actions */}
         <div className="flex items-center gap-2">
           <button
-            onClick={loadData}
+            onClick={refreshData}
             title="Yenile"
             className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-xl transition cursor-pointer border border-zinc-800"
           >
@@ -192,7 +147,7 @@ export const AnalyticsView: React.FC = () => {
           whiteNodes={selectedGame.userColor === 'white' ? selectedNodes ?? new Map() : new Map()}
           blackNodes={selectedGame.userColor === 'black' ? selectedNodes ?? new Map() : new Map()}
           onClose={() => setSelectedGame(null)}
-          onRefreshRepertoire={loadData}
+          onRefreshRepertoire={refreshData}
         />
       )}
 
@@ -200,7 +155,7 @@ export const AnalyticsView: React.FC = () => {
       <GameImportModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={loadData}
+        onSuccess={refreshData}
       />
     </div>
   );

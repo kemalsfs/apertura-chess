@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { RepertoireNode } from '../../types/chess';
 import { MessageSquare, Save, Check } from 'lucide-react';
 
@@ -11,13 +11,8 @@ export const MoveAnnotation: React.FC<MoveAnnotationProps> = ({
   currentNode,
   onSaveComment,
 }) => {
-  const [text, setText] = useState('');
+  const [text, setText] = useState(currentNode?.comment || '');
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    setText(currentNode?.comment || '');
-    setSaved(false);
-  }, [currentNode]);
 
   if (!currentNode) {
     return (

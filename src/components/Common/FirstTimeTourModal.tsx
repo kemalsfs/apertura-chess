@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Zap, 
   KeyRound, 
@@ -19,15 +19,8 @@ interface FirstTimeTourModalProps {
 
 export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [tokenInput, setTokenInput] = useState('');
+  const [tokenInput, setTokenInput] = useState(() => getLichessToken() ?? '');
   const [isTokenSaved, setIsTokenSaved] = useState(false);
-
-  useEffect(() => {
-    const existing = getLichessToken();
-    if (existing) {
-      setTokenInput(existing);
-    }
-  }, []);
 
   const handleSaveToken = () => {
     if (tokenInput.trim()) {

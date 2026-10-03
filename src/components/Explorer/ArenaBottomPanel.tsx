@@ -41,18 +41,22 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'duality' | 'theory'>('duality');
   const [source, setSource] = useState<ExplorerSource>('masters');
-  const [data, setData] = useState<ExplorerResult | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [hasToken, setHasToken] = useState(() => !!getLichessToken());
+  const [result, setResult] = useState<{ key: string; data: ExplorerResult | null; error: string | null } | null>(null);
+  const requestKey = JSON.stringify([fen, source, hasToken]);
+  const data = result?.key === requestKey ? result.data : null;
+  const error = result?.key === requestKey ? result.error : null;
+  const isLoading = result?.key !== requestKey;
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
   const [tokenInput, setTokenInput] = useState(() => getLichessToken());
-  const [hasToken, setHasToken] = useState(() => !!getLichessToken());
 
   useEffect(() => {
-    if (tokenModalRequest > 0) {
+    if (tokenModalRequest <= 0) return;
+    const timer = setTimeout(() => {
       setTokenInput(getLichessToken());
       setIsTokenModalOpen(true);
-    }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [tokenModalRequest]);
 
   // Fetch opening explorer data on FEN or source change
@@ -60,22 +64,16 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
     const controller = new AbortController();
     let isCancelled = false;
 
-    setIsLoading(true);
-    setError(null);
-    setData(null);
-
     async function loadExplorer() {
       try {
         const res = await fetchOpeningExplorer(fen, source, controller.signal);
         if (!isCancelled) {
-          setData(res);
-          setIsLoading(false);
+          setResult({ key: requestKey, data: res, error: null });
         }
       } catch (err: any) {
         if (!isCancelled && err.name !== 'AbortError') {
           console.warn('Opening explorer fetch failed:', err);
-          setError('Açılış verileri yüklenemedi');
-          setIsLoading(false);
+          setResult({ key: requestKey, data: null, error: 'Açılış verileri yüklenemedi' });
         }
       }
     }
@@ -87,7 +85,7 @@ export const ArenaBottomPanel: React.FC<ArenaBottomPanelProps> = ({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [fen, source, hasToken]);
+  }, [fen, source, hasToken, requestKey]);
 
   const handleSaveToken = () => {
     setLichessToken(tokenInput);

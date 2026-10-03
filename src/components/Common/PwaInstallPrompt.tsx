@@ -8,7 +8,11 @@ interface BeforeInstallPromptEvent extends Event {
 
 export const PwaInstallPrompt: React.FC<{ isBlocked?: boolean }> = ({ isBlocked = false }) => {
   const [showPrompt, setShowPrompt] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [isIOS] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    return /iphone|ipad|ipod/.test(userAgent) && /safari/.test(userAgent) && !/crios|fxios|edgios/.test(userAgent);
+  });
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
@@ -30,10 +34,6 @@ export const PwaInstallPrompt: React.FC<{ isBlocked?: boolean }> = ({ isBlocked 
     }
 
     // Detect iOS Safari
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIosSafari = /iphone|ipad|ipod/.test(userAgent) && /safari/.test(userAgent) && !/crios|fxios|edgios/.test(userAgent);
-    setIsIOS(isIosSafari);
-
     // Listen for Android/Chrome beforeinstallprompt
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
@@ -44,7 +44,7 @@ export const PwaInstallPrompt: React.FC<{ isBlocked?: boolean }> = ({ isBlocked 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
     // If iOS, show after 2 seconds
-    if (isIosSafari) {
+    if (isIOS) {
       const timer = setTimeout(() => setShowPrompt(true), 2000);
       return () => {
         window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
@@ -53,7 +53,7 @@ export const PwaInstallPrompt: React.FC<{ isBlocked?: boolean }> = ({ isBlocked 
     }
 
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-  }, []);
+  }, [isIOS]);
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {

@@ -4,31 +4,25 @@ import { fetchCloudEval } from '../services/cloudEval';
 import { stockfishEngine } from '../services/stockfishEngine';
 import type { EvaluationResult } from '../types/explorer';
 
+const DISABLED_EVALUATION: EvaluationResult = {
+  type: 'cp', value: 0, depth: 0, source: 'none', isLoading: false,
+};
+const INITIAL_EVALUATION: EvaluationResult = {
+  type: 'cp', value: 20, depth: 0, source: 'none', isLoading: true,
+};
+
 export function useEvaluation(fen: string, turn: 'w' | 'b', enabled: boolean = true) {
-  const [evaluation, setEvaluation] = useState<EvaluationResult>({
-    type: 'cp',
-    value: 20, // +0.2 starting default
-    depth: 0,
-    source: 'none',
-    isLoading: true,
-  });
+  const [latest, setLatest] = useState<{ key: string; result: EvaluationResult } | null>(null);
+  const requestKey = JSON.stringify([fen, turn]);
+  const evaluation = latest?.key === requestKey
+    ? latest.result
+    : { ...(latest?.result ?? INITIAL_EVALUATION), isLoading: true };
 
   useEffect(() => {
-    if (!enabled) {
-      setEvaluation({
-        type: 'cp',
-        value: 0,
-        depth: 0,
-        source: 'none',
-        isLoading: false,
-      });
-      return;
-    }
+    if (!enabled) return;
 
     const controller = new AbortController();
     let isCancelled = false;
-
-    setEvaluation(prev => ({ ...prev, isLoading: true }));
 
     // Helper to compute SAN for top UCI moves
     const enrichWithSan = (evalRes: EvaluationResult): EvaluationResult => {
@@ -53,7 +47,7 @@ export function useEvaluation(fen: string, turn: 'w' | 'b', enabled: boolean = t
               ...m,
               san: moveObj ? moveObj.san : m.uci,
             };
-          } catch (e) {
+          } catch {
             return m;
           }
         });
@@ -61,7 +55,7 @@ export function useEvaluation(fen: string, turn: 'w' | 'b', enabled: boolean = t
           ...evalRes,
           topMoves: enrichedMoves,
         };
-      } catch (e) {
+      } catch {
         // Ignore
       }
       return evalRes;
@@ -74,13 +68,13 @@ export function useEvaluation(fen: string, turn: 'w' | 'b', enabled: boolean = t
         if (isCancelled) return;
 
         if (cloudResult && cloudResult.topMoves && cloudResult.topMoves.length >= 3) {
-          setEvaluation(enrichWithSan(cloudResult));
+          setLatest({ key: requestKey, result: enrichWithSan(cloudResult) });
           return;
         } else if (cloudResult) {
           // If cloud eval gave only 1 move, set it quickly while local engine calculates full 3 moves
-          setEvaluation(enrichWithSan(cloudResult));
+          setLatest({ key: requestKey, result: enrichWithSan(cloudResult) });
         }
-      } catch (err) {
+      } catch {
         // Continue to local engine
       }
 
@@ -89,7 +83,7 @@ export function useEvaluation(fen: string, turn: 'w' | 'b', enabled: boolean = t
       // 2. Local Stockfish Web Worker with MultiPV=3
       stockfishEngine.evaluate(fen, turn, (localResult) => {
         if (!isCancelled) {
-          setEvaluation(enrichWithSan(localResult));
+          setLatest({ key: requestKey, result: enrichWithSan(localResult) });
         }
       });
     }
@@ -103,7 +97,7 @@ export function useEvaluation(fen: string, turn: 'w' | 'b', enabled: boolean = t
       controller.abort();
       stockfishEngine.stop();
     };
-  }, [fen, turn, enabled]);
+  }, [fen, turn, enabled, requestKey]);
 
-  return evaluation;
+  return enabled ? evaluation : DISABLED_EVALUATION;
 }

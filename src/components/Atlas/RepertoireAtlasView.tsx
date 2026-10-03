@@ -74,7 +74,6 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
   onDeleteRepertoire,
   onRefreshRepertoire,
 }) => {
-  const [selectedRepId, setSelectedRepId] = useState<string>(activeRepertoireId);
   const [viewMode, setViewMode] = useState<'visual' | 'hierarchical' | 'lines'>('visual');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [collapsedNodeIds, setCollapsedNodeIds] = useState<Set<string>>(new Set());
@@ -86,17 +85,9 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Sync incoming activeRepertoireId prop
-  React.useEffect(() => {
-    if (activeRepertoireId) {
-      setSelectedRepId(activeRepertoireId);
-      setSelectedNodeId(null);
-    }
-  }, [activeRepertoireId]);
-
   // Active Repertoire
-  const currentRep = repertoires.find(r => r.id === selectedRepId) || repertoires[0];
-  const currentRepId = currentRep ? currentRep.id : selectedRepId;
+  const currentRep = repertoires.find(r => r.id === activeRepertoireId) || repertoires[0];
+  const currentRepId = currentRep ? currentRep.id : activeRepertoireId;
 
   // Nodes belonging to the selected repertoire
   const repNodesMap = useMemo(() => {
@@ -467,7 +458,7 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
                   <button
                     key={rep.id}
                     onClick={() => {
-                      setSelectedRepId(rep.id);
+                      setSelectedNodeId(null);
                       onSelectRepertoire(rep.id);
                     }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
@@ -1017,7 +1008,7 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={async (name, color, description, makeDefault) => {
           const newId = await onCreateRepertoire(name, color, description, makeDefault);
-          setSelectedRepId(newId);
+          setSelectedNodeId(null);
           onSelectRepertoire(newId);
         }}
       />

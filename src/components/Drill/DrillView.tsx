@@ -28,6 +28,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
   onOpenVariantOnBoard,
 }) => {
   const [isVariantManagerOpen, setIsVariantManagerOpen] = useState(false);
+  const [variantManagerOpenedAt, setVariantManagerOpenedAt] = useState(0);
 
   const {
     allExtractedLines,
@@ -123,7 +124,10 @@ export const DrillView: React.FC<DrillViewProps> = ({
         singleLine={!!selectedLineId}
         onExit={onExit}
         onRestart={restartSession}
-        onOpenVariantManager={() => setIsVariantManagerOpen(true)}
+        onOpenVariantManager={() => {
+          setVariantManagerOpenedAt(Date.now());
+          setIsVariantManagerOpen(true);
+        }}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -174,6 +178,7 @@ export const DrillView: React.FC<DrillViewProps> = ({
       {/* Variant Manager Filter Modal */}
       <DrillVariantManagerModal
         isOpen={isVariantManagerOpen}
+        now={variantManagerOpenedAt}
         allLines={allExtractedLines}
         currentFilter={filter}
         onSelectFilter={changeFilter}

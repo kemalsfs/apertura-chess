@@ -58,7 +58,7 @@ export class GameReviewService {
       try {
         this.worker.postMessage('stop');
         this.worker.terminate();
-      } catch (e) {}
+      } catch { /* Worker may already be gone. */ }
       this.worker = null;
     }
   }
@@ -98,7 +98,7 @@ export class GameReviewService {
           if (this.worker) {
             this.worker.onmessage = null;
             this.worker.onerror = null;
-            try { this.worker.postMessage('stop'); } catch (e) { /* Worker may already be gone. */ }
+            try { this.worker.postMessage('stop'); } catch { /* Worker may already be gone. */ }
           }
           resolve(!cancelled && bestCp !== undefined && currentDepth >= targetDepth ? {
             ply: 0,
@@ -149,7 +149,7 @@ export class GameReviewService {
         this.worker.postMessage('stop');
         this.worker.postMessage(`position fen ${fen}`);
         this.worker.postMessage(`go depth ${targetDepth}`);
-      } catch (e) {
+      } catch {
         finish(true);
       }
     });
@@ -191,7 +191,7 @@ export class GameReviewService {
             depth: cloudRes.depth,
           };
         }
-      } catch (e) {
+      } catch {
         // Fallback to local
       } finally {
         clearTimeout(cloudTimeout);

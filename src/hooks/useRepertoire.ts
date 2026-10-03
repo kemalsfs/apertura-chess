@@ -46,15 +46,8 @@ export function useRepertoire() {
 
   // Initialize DB and load repertoires on mount
   useEffect(() => {
-    async function loadData() {
-      const allReps = await loadRepertoires();
-      if (allReps.length > 0 && !activeRepertoireId) {
-        const defaultRep = allReps.find(r => r.isDefault && r.color === 'white') || allReps[0];
-        setActiveRepertoireId(defaultRep.id);
-        setOrientation(defaultRep.color);
-      }
-    }
-    loadData();
+    const timer = setTimeout(() => { void loadRepertoires(); }, 0);
+    return () => clearTimeout(timer);
   }, [loadRepertoires]);
 
   // Load nodes for active repertoire
@@ -373,7 +366,7 @@ export function useRepertoire() {
       setHistoryIndex(boardHistory.length);
       setPendingPromotion(null);
     }
-  }, [historyIndex, boardHistory.length, currentChildren, goToStep]);
+  }, [historyIndex, boardHistory, currentChildren, goToStep]);
 
   // Select a saved node directly from MoveTree / Explorer
   const goToNode = useCallback(

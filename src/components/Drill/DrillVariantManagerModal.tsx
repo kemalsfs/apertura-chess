@@ -17,6 +17,7 @@ import {
 
 interface DrillVariantManagerModalProps {
   isOpen: boolean;
+  now: number;
   allLines: RepertoireNode[][];
   currentFilter: DrillFilterType;
   onSelectFilter: (filter: DrillFilterType) => void;
@@ -26,6 +27,7 @@ interface DrillVariantManagerModalProps {
 
 export const DrillVariantManagerModal: React.FC<DrillVariantManagerModalProps> = ({
   isOpen,
+  now,
   allLines,
   currentFilter,
   onSelectFilter,
@@ -41,7 +43,6 @@ export const DrillVariantManagerModal: React.FC<DrillVariantManagerModalProps> =
   }));
 
   // Filter counters
-  const now = Date.now();
   const threeDaysAgo = now - 3 * 24 * 60 * 60 * 1000;
 
   const dueCount = linesMeta.filter(m => m.meta.isDue || m.meta.lastReviewed === null).length;
@@ -59,7 +60,7 @@ export const DrillVariantManagerModal: React.FC<DrillVariantManagerModalProps> =
 
   const formatLastReviewed = (timestamp: number | null) => {
     if (!timestamp) return 'Hiç çalışılmadı';
-    const diffHours = Math.round((Date.now() - timestamp) / (1000 * 60 * 60));
+    const diffHours = Math.round((now - timestamp) / (1000 * 60 * 60));
     if (diffHours < 1) return 'Az önce';
     if (diffHours < 24) return `${diffHours} saat önce`;
     const diffDays = Math.round(diffHours / 24);

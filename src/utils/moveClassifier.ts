@@ -168,7 +168,7 @@ function isSacrifice(prevFen: string, uci: string): boolean {
       return true;
     }
     return false;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

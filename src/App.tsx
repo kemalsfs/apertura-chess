@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useRepertoire } from './hooks/useRepertoire';
 import { useEvaluation } from './hooks/useEvaluation';
 import { useTheme } from './hooks/useTheme';
@@ -30,23 +30,17 @@ const EMPTY_ARROWS: DrawShape[] = [];
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('hub');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(() => {
+    try {
+      return !localStorage.getItem(FIRST_TIME_TOUR_KEY);
+    } catch {
+      return false;
+    }
+  });
   const [isCreateTreeModalOpen, setIsCreateTreeModalOpen] = useState(false);
   const [tokenModalRequest, setTokenModalRequest] = useState(0);
   const [selectedDrillLineId, setSelectedDrillLineId] = useState<string | null>(null);
   const { themeId, theme, setThemeId } = useTheme();
-
-  // Auto-launch Tour on very first visit
-  useEffect(() => {
-    try {
-      const hasSeen = localStorage.getItem(FIRST_TIME_TOUR_KEY);
-      if (!hasSeen) {
-        setIsTourOpen(true);
-      }
-    } catch (e) {
-      // Ignore
-    }
-  }, []);
 
   const {
     repertoires,
@@ -117,7 +111,7 @@ export function App() {
 
   const lastMove: [string, string] | undefined = useMemo(() => {
     return currentStep ? [currentStep.from, currentStep.to] : undefined;
-  }, [currentStep?.from, currentStep?.to]);
+  }, [currentStep]);
 
   return (
     <div
@@ -226,6 +220,7 @@ export function App() {
 
                   {/* Move Annotation & Notes */}
                   <MoveAnnotation
+                    key={currentNode?.id ?? 'none'}
                     currentNode={currentNode}
                     onSaveComment={saveComment}
                   />

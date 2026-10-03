@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ImportedGame } from '../../types/analytics';
 import type { Repertoire, RepertoireNode } from '../../types/chess';
-import { calculateAnalyticsForTrees, selectBestRepertoireMatch } from './AnalyticsView';
+import { calculateAnalyticsForTrees, selectBestRepertoireMatch } from './analyticsCalculations';
 
 function repertoire(id: string, color: 'white' | 'black', isDefault = false): Repertoire {
   return { id, name: id, color, isDefault, createdAt: 1, updatedAt: 1 };
