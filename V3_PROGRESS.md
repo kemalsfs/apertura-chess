@@ -14,7 +14,7 @@ Updated: 2026-10-03. Working branch: `codex/apertura-v3`.
 - Data migration and JSON restore use transactions. Restore repairs missing parent-child links while preserving existing records and rejects cyclic backup graphs.
 - Match review resolves the actual default repertoire, and drill retries start from the displayed position.
 - `npm test`: 45 Vitest and 5 Node tests passed. `npm run build` and the generated offline shell test passed.
-- `npx cap sync android` and `:app:assembleDebug` passed. The debug APK reports package `com.aperturachess.app`, minSdk 24, targetSdk 36 and version 3.0.0. Its SHA-256 is `9641181780D7095487CB6E52F5EC08CD716CF7FB7D91CCCAAC971479C2D01953`.
+- `npx cap sync android` and `:app:assembleDebug` passed. The current debug APK uses separate package `com.aperturachess.app.debug` and label `Apertura 3 Test` so it can be installed beside the Play app without replacing its local data. It reports minSdk 24, targetSdk 36 and version 3.0.0. Its SHA-256 is `5B2491C6E3D1A46A5C76BB5199846555EC96E3899D1431A4B34BB7C67E6B4379`.
 - Edge 154 with a real service worker passed offline reload and a fresh browser launch after the local server had been shut down. The app shell cache was `apertura-shell-9df666a88668da70`.
 
 ## Open acceptance and risks
