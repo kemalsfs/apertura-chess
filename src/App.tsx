@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { lazy, Suspense, useState, useCallback, useMemo } from 'react';
 import { useRepertoire } from './hooks/useRepertoire';
 import { useEvaluation } from './hooks/useEvaluation';
 import { useTheme } from './hooks/useTheme';
@@ -10,10 +10,7 @@ import { RepertoireHeader } from './components/Repertoire/RepertoireHeader';
 import { CreateTreeModal } from './components/Repertoire/CreateTreeModal';
 import { MoveTree } from './components/Repertoire/MoveTree';
 import { MoveAnnotation } from './components/Repertoire/MoveAnnotation';
-import { DrillView } from './components/Drill/DrillView';
-import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { HubView } from './components/Hub/HubView';
-import { RepertoireAtlasView } from './components/Atlas/RepertoireAtlasView';
 import { Header, type ActiveTab } from './components/Layout/Header';
 import { MobileNav } from './components/Layout/MobileNav';
 import { ArenaBottomPanel } from './components/Explorer/ArenaBottomPanel';
@@ -26,6 +23,9 @@ import { Info } from 'lucide-react';
 import type { DrawShape } from './types/chess';
 
 const EMPTY_ARROWS: DrawShape[] = [];
+const DrillView = lazy(() => import('./components/Drill/DrillView').then(module => ({ default: module.DrillView })));
+const AnalyticsView = lazy(() => import('./components/Analytics/AnalyticsView').then(module => ({ default: module.AnalyticsView })));
+const RepertoireAtlasView = lazy(() => import('./components/Atlas/RepertoireAtlasView').then(module => ({ default: module.RepertoireAtlasView })));
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('hub');
@@ -238,8 +238,9 @@ export function App() {
           </div>
         )}
 
-        {/* Tab 2: Variation & Repertoire Tree Atlas */}
-        {activeTab === 'tree' && (
+        <Suspense fallback={<div className="flex items-center justify-center py-20 text-zinc-500 text-sm" role="status">Bölüm yükleniyor...</div>}>
+          {/* Tab 2: Variation & Repertoire Tree Atlas */}
+          {activeTab === 'tree' && (
           <RepertoireAtlasView
             repertoires={repertoires}
             activeRepertoireId={activeRepertoireId}
@@ -260,10 +261,10 @@ export function App() {
             onDeleteRepertoire={deleteRepertoire}
             onRefreshRepertoire={refreshRepertoire}
           />
-        )}
+          )}
 
-        {/* Tab 3: Drill & Spaced Repetition Mode */}
-        {activeTab === 'drill' && (
+          {/* Tab 3: Drill & Spaced Repetition Mode */}
+          {activeTab === 'drill' && (
           <DrillView
             repertoires={repertoires}
             activeRepertoireId={activeRepertoireId}
@@ -272,10 +273,11 @@ export function App() {
             onExit={() => handleTabChange('tree')}
             onOpenVariantOnBoard={(nodeId) => handleOpenNodeInArena(nodeId, activeRepertoireId)}
           />
-        )}
+          )}
 
-        {/* Tab 4: Game Analytics Mode */}
-        {activeTab === 'analytics' && <AnalyticsView />}
+          {/* Tab 4: Game Analytics Mode */}
+          {activeTab === 'analytics' && <AnalyticsView />}
+        </Suspense>
       </main>
 
       {/* Create Tree Modal */}
