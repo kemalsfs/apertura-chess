@@ -36,27 +36,28 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="bg-black/10 dark:bg-black/30 backdrop-blur-xl border-b border-black/5 dark:border-white/5 px-4 py-3 sticky top-0 z-40 transition-colors">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Brand (Click to open Onboarding & Navigation Hub) */}
-        <div
+        <button
+          type="button"
           onClick={onOpenOnboarding}
-          className="flex items-center gap-3 cursor-pointer group select-none"
-          title="Apertura v3.0 Rehberi & Hızlı Menü (Tıkla)"
+          className="flex items-center gap-3 cursor-pointer group select-none text-left rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+          title="Apertura v3.0 Rehberi ve Hızlı Menü"
         >
-          <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-lg group-hover:scale-110 group-hover:bg-amber-500/30 transition shadow-inner">
+          <span aria-hidden="true" className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-lg group-hover:scale-110 group-hover:bg-amber-500/30 transition shadow-inner">
             ♟
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-zinc-100 flex items-center gap-1.5 group-hover:text-amber-400 transition">
+          </span>
+          <span>
+            <span role="heading" aria-level={1} className="text-sm font-bold text-zinc-100 flex items-center gap-1.5 group-hover:text-amber-400 transition">
               Apertura <span className="text-amber-400 font-normal text-xs bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/30">v3.0</span>
-            </h1>
-            <p className="text-[10px] text-zinc-500 font-mono flex items-center gap-1">
+            </span>
+            <span className="text-[10px] text-zinc-500 font-mono flex items-center gap-1">
               <span>Hızlı Menü & Rehber</span>
               <span className="text-[9px] text-amber-500/70">✦</span>
-            </p>
-          </div>
-        </div>
+            </span>
+          </span>
+        </button>
 
         {/* 5 Main Navigation Tabs */}
-        <nav className="hidden md:flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
+        <nav aria-label="Ana gezinme" className="hidden md:flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
           <button
             onClick={() => onTabChange('hub')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
@@ -121,7 +122,10 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Controls: Theme Picker Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
+            type="button"
             onClick={() => setIsThemeOpen(!isThemeOpen)}
+            aria-expanded={isThemeOpen}
+            aria-controls="apertura-theme-menu"
             className="flex items-center gap-2 text-xs text-zinc-300 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 px-3 py-1.5 rounded-xl transition cursor-pointer"
             title="Renk Paleti Seçici"
           >
@@ -131,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Theme Dropdown Menu */}
           {isThemeOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-2 z-50 space-y-1">
+            <div id="apertura-theme-menu" className="absolute right-0 mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-2 z-50 space-y-1">
               <div className="px-3 py-2 text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-b border-zinc-800">
                 Renk Paletleri
               </div>
@@ -139,21 +143,23 @@ export const Header: React.FC<HeaderProps> = ({
               {Object.values(THEMES).map(t => {
                 const isSelected = t.id === currentThemeId;
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={t.id}
+                    aria-pressed={isSelected}
                     onClick={() => {
                       onSelectTheme(t.id);
                       setIsThemeOpen(false);
                     }}
-                    className={`p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition ${
+                    className={`w-full p-2.5 rounded-xl flex items-center justify-between text-left cursor-pointer transition focus-visible:outline-2 focus-visible:outline-amber-400 ${
                       isSelected
                         ? 'bg-zinc-800 border border-amber-500/30 text-zinc-100'
                         : 'hover:bg-zinc-800/60 text-zinc-300'
                     }`}
                   >
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center -space-x-1 shrink-0">
+                    <span className="space-y-0.5">
+                      <span className="flex items-center gap-2">
+                        <span className="flex items-center -space-x-1 shrink-0">
                           <span
                             className="w-2.5 h-2.5 rounded-full border border-black/20"
                             style={{ backgroundColor: t.bgBase }}
@@ -166,17 +172,17 @@ export const Header: React.FC<HeaderProps> = ({
                             className="w-2.5 h-2.5 rounded-full border border-black/20"
                             style={{ backgroundColor: t.accent }}
                           />
-                        </div>
+                        </span>
                         <span className="font-semibold text-xs">{t.name}</span>
                         <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/10 text-zinc-400 font-mono">
                           {t.badge}
                         </span>
-                      </div>
-                      <p className="text-[10px] text-zinc-500">{t.description}</p>
-                    </div>
+                      </span>
+                      <span className="block text-[10px] text-zinc-500">{t.description}</span>
+                    </span>
 
                     {isSelected && <Check className="w-4 h-4 text-amber-400 shrink-0" />}
-                  </div>
+                  </button>
                 );
               })}
             </div>
