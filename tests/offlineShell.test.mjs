@@ -13,6 +13,9 @@ test('built app shell opens the cached home page when the network is down', asyn
       assert.ok(urls.includes('/index.html'));
       assert.ok(urls.some(url => url.endsWith('.js')));
       assert.ok(urls.some(url => url.endsWith('.css')));
+      assert.ok(urls.some(url => url.includes('DrillView-')));
+      assert.ok(urls.some(url => url.includes('RepertoireAtlasView-')));
+      assert.ok(urls.some(url => url.includes('AnalyticsView-')));
       cached.set('/index.html', home);
     },
     match: async request => cached.get(request),
