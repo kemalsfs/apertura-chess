@@ -29,14 +29,16 @@ const source = `const CACHE = ${JSON.stringify(cacheName)};
 const SHELL = ${JSON.stringify(urls)};
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  // Stay waiting while pages from the previous build are open. They may still
+  // request versioned lazy chunks after this worker has finished installing.
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(Promise.all([
-    caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('apertura-shell-') && key !== CACHE).map(key => caches.delete(key)))),
-    self.clients.claim(),
-  ]));
+  event.waitUntil(caches.keys().then(keys => Promise.all(
+    keys.filter(key => key.startsWith('apertura-shell-') && key !== CACHE)
+      .map(key => caches.delete(key))
+  )));
 });
 
 self.addEventListener('fetch', event => {
@@ -44,7 +46,9 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(async () => (await caches.open(CACHE)).match('/index.html')));
+    // Pair each controlled page with this worker's HTML and asset manifest.
+    // A network-first HTML response could reference chunks from a newer build.
+    event.respondWith(caches.open(CACHE).then(cache => cache.match('/index.html')).then(cached => cached || fetch(request)));
     return;
   }
   if (SHELL.includes(url.pathname)) {

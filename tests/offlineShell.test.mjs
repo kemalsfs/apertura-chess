@@ -17,6 +17,8 @@ test('built app shell opens the cached home page when the network is down', asyn
     },
     match: async request => cached.get(request),
   };
+  let networkRequests = 0;
+  let skippedWaiting = false;
   const caches = {
     open: async () => cache,
     match: async () => undefined,
@@ -24,16 +26,17 @@ test('built app shell opens the cached home page when the network is down', asyn
   const self = {
     location: { origin: 'http://127.0.0.1:4173' },
     addEventListener: (type, handler) => handlers.set(type, handler),
-    skipWaiting: async () => {},
+    skipWaiting: async () => { skippedWaiting = true; },
   };
   vm.runInNewContext(source, {
     self, caches, URL,
-    fetch: async () => { throw new Error('offline'); },
+    fetch: async () => { networkRequests++; throw new Error('offline'); },
   });
 
   let installation;
   handlers.get('install')({ waitUntil: promise => { installation = promise; } });
   await installation;
+  assert.equal(skippedWaiting, false, 'an update must wait for older open pages to close');
 
   let response;
   handlers.get('fetch')({
@@ -41,6 +44,7 @@ test('built app shell opens the cached home page when the network is down', asyn
     respondWith: promise => { response = promise; },
   });
   assert.equal(await response, home);
+  assert.equal(networkRequests, 0, 'controlled navigation must use its own cached HTML even when online');
 
   response = undefined;
   handlers.get('fetch')({
