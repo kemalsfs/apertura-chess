@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useCallback, useMemo } from 'react';
+import { lazy, Suspense, useState, useCallback, useMemo, useRef } from 'react';
 import { useRepertoire } from './hooks/useRepertoire';
 import { useEvaluation } from './hooks/useEvaluation';
 import { useTheme } from './hooks/useTheme';
@@ -40,6 +40,12 @@ export function App() {
   const [isCreateTreeModalOpen, setIsCreateTreeModalOpen] = useState(false);
   const [tokenModalRequest, setTokenModalRequest] = useState(0);
   const [selectedDrillLineId, setSelectedDrillLineId] = useState<string | null>(null);
+  const [saveFeedback, setSaveFeedback] = useState<{
+    positionKey: string;
+    status: 'pending' | 'success' | 'error';
+    repertoireName: string;
+  } | null>(null);
+  const saveInFlightRef = useRef(false);
   const { themeId, theme, setThemeId } = useTheme();
 
   const {
@@ -80,18 +86,41 @@ export function App() {
   // Fetch all nodes live for White and Black
   const allDbNodes = useLiveQuery(() => db.nodes.toArray(), []);
 
+  const positionKey = `${activeRepertoireId}|${currentFen}`;
+  const currentSaveFeedback = saveFeedback?.positionKey === positionKey &&
+    (saveFeedback.status !== 'success' || isCurrentSaved) ? saveFeedback : null;
+  const saveBusyElsewhere = saveFeedback?.status === 'pending' && saveFeedback.positionKey !== positionKey;
+  const clearSettledSaveFeedback = useCallback(() => {
+    setSaveFeedback(previous => previous?.status === 'pending' ? previous : null);
+  }, []);
+
   // Handle Save directly into active repertoire
   const handleSaveCurrentToRepertoire = useCallback(async () => {
-    await saveCurrentToRepertoire();
-  }, [saveCurrentToRepertoire]);
+    if (saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
+    const requestedPositionKey = positionKey;
+    const repertoireName = repertoires.find(rep => rep.id === activeRepertoireId)?.name ?? 'Seçili repertuvar';
+    setSaveFeedback({ positionKey: requestedPositionKey, status: 'pending', repertoireName });
+    try {
+      const result = await saveCurrentToRepertoire();
+      if (!result) throw new Error('Kaydedilecek hamle bulunamadı.');
+      setSaveFeedback({ positionKey: requestedPositionKey, status: 'success', repertoireName: result.repertoireName });
+    } catch (error) {
+      console.error('Repertuvar kaydı başarısız:', error);
+      setSaveFeedback({ positionKey: requestedPositionKey, status: 'error', repertoireName });
+    } finally {
+      saveInFlightRef.current = false;
+    }
+  }, [saveCurrentToRepertoire, positionKey, repertoires, activeRepertoireId]);
 
   // Handle instant jump to Arena with active engine & DB
   const handleOpenNodeInArena = useCallback(
     async (nodeId: string, repertoireId?: string) => {
+      clearSettledSaveFeedback();
       await loadAndGoToNode(nodeId, repertoireId);
       setActiveTab('repertoire');
     },
-    [loadAndGoToNode]
+    [loadAndGoToNode, clearSettledSaveFeedback]
   );
 
   // Live Stockfish Evaluation for Repertoire mode (only active when on Repertoire tab)
@@ -99,15 +128,16 @@ export function App() {
 
   const handleMove = useCallback(
     (orig: string, dest: string) => {
-      playMove(orig, dest);
+      if (playMove(orig, dest)) clearSettledSaveFeedback();
     },
-    [playMove]
+    [playMove, clearSettledSaveFeedback]
   );
 
   const handleTabChange = useCallback((tab: ActiveTab) => {
+    clearSettledSaveFeedback();
     setSelectedDrillLineId(null);
     setActiveTab(tab);
-  }, []);
+  }, [clearSettledSaveFeedback]);
 
   const lastMove: [string, string] | undefined = useMemo(() => {
     return currentStep ? [currentStep.from, currentStep.to] : undefined;
@@ -137,8 +167,11 @@ export function App() {
           <HubView
             repertoires={repertoires}
             activeRepertoireId={activeRepertoireId}
-            onSelectRepertoire={setActiveRepertoireId}
-            onNavigateTab={setActiveTab}
+            onSelectRepertoire={(id) => {
+              clearSettledSaveFeedback();
+              setActiveRepertoireId(id);
+            }}
+            onNavigateTab={handleTabChange}
           />
         )}
 
@@ -149,8 +182,14 @@ export function App() {
             <RepertoireHeader
               repertoires={repertoires}
               activeId={activeRepertoireId}
-              onSelect={setActiveRepertoireId}
-              onClearRepertoire={clearRepertoire}
+              onSelect={(id) => {
+                clearSettledSaveFeedback();
+                setActiveRepertoireId(id);
+              }}
+              onClearRepertoire={() => {
+                clearSettledSaveFeedback();
+                return clearRepertoire();
+              }}
               onCreateTree={() => setIsCreateTreeModalOpen(true)}
               onSetDefault={setDefaultRepertoire}
               onDeleteTree={deleteRepertoire}
@@ -184,12 +223,17 @@ export function App() {
 
                   {/* Board Controls with Repertoire Save Button */}
                   <BoardControls
-                    onGoToStart={goToStart}
-                    onGoBack={goBack}
-                    onGoForward={goForward}
+                    onGoToStart={() => { clearSettledSaveFeedback(); goToStart(); }}
+                    onGoBack={() => { clearSettledSaveFeedback(); goBack(); }}
+                    onGoForward={() => { clearSettledSaveFeedback(); goForward(); }}
                     onFlipBoard={flipBoard}
                     onSaveToRepertoire={handleSaveCurrentToRepertoire}
-                    onDeleteCurrentNode={currentNodeId ? () => deleteNode(currentNodeId) : undefined}
+                    saveFeedback={currentSaveFeedback}
+                    saveBusyElsewhere={saveBusyElsewhere}
+                    onDeleteCurrentNode={currentNodeId ? () => {
+                      clearSettledSaveFeedback();
+                      return deleteNode(currentNodeId);
+                    } : undefined}
                     isSaved={isCurrentSaved}
                     canSave={history.length > 0}
                     canGoBack={history.length > 0}
@@ -215,7 +259,7 @@ export function App() {
                     history={history}
                     currentChildren={currentChildren}
                     currentNodeId={currentNodeId}
-                    onSelectNode={goToNode}
+                    onSelectNode={(id) => { clearSettledSaveFeedback(); goToNode(id); }}
                   />
 
                   {/* Move Annotation & Notes */}
@@ -245,10 +289,11 @@ export function App() {
             repertoires={repertoires}
             activeRepertoireId={activeRepertoireId}
             allNodes={allDbNodes || []}
-            onSelectRepertoire={setActiveRepertoireId}
+            onSelectRepertoire={(id) => { clearSettledSaveFeedback(); setActiveRepertoireId(id); }}
             onOpenNodeOnBoard={handleOpenNodeInArena}
             onStartDrillLine={(line) => {
               if (line.length === 0) return;
+              clearSettledSaveFeedback();
               setActiveRepertoireId(line[0].repertoireId);
               const selectedRepertoire = repertoires.find(rep => rep.id === line[0].repertoireId);
               if (selectedRepertoire) setOrientation(selectedRepertoire.color);
@@ -287,6 +332,7 @@ export function App() {
         onClose={() => setIsCreateTreeModalOpen(false)}
         onCreate={async (name, color, desc, makeDefault) => {
           const newId = await createRepertoire(name, color, desc, makeDefault);
+          clearSettledSaveFeedback();
           setActiveRepertoireId(newId);
           setOrientation(color);
         }}
@@ -298,6 +344,7 @@ export function App() {
         onClose={() => setIsOnboardingOpen(false)}
         onNavigateTab={handleTabChange}
         onOpenTokenModal={() => {
+          clearSettledSaveFeedback();
           setIsOnboardingOpen(false);
           setActiveTab('repertoire');
           setTokenModalRequest(request => request + 1);
@@ -319,7 +366,7 @@ export function App() {
       <PromotionModal
         isOpen={pendingPromotion !== null}
         color={orientation}
-        onSelect={completePromotion}
+        onSelect={(piece) => { clearSettledSaveFeedback(); completePromotion(piece); }}
         onCancel={cancelPromotion}
       />
 
