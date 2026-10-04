@@ -79,7 +79,7 @@ export const HubView: React.FC<HubViewProps> = ({
       setWhiteNodes(wCount);
       setBlackNodes(bCount);
 
-      // 2. Real Daily Streak & Current Week Activity Days
+      // 2. Drill activity dates. Imported game dates do not represent app use.
       const activityDates = new Set<string>();
       try {
         const raw = localStorage.getItem('apertura_activity_dates');
@@ -94,14 +94,6 @@ export const HubView: React.FC<HubViewProps> = ({
       for (const n of allNodes) {
         if (n.srs?.lastReviewed) {
           const d = new Date(n.srs.lastReviewed);
-          const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          activityDates.add(iso);
-        }
-      }
-
-      for (const g of allGames) {
-        if (g.date) {
-          const d = new Date(g.date);
           const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
           activityDates.add(iso);
         }
@@ -158,57 +150,16 @@ export const HubView: React.FC<HubViewProps> = ({
       }
       setWeekDays(weekList);
 
-      // 3. Real Retention Health (Spaced Repetition Ustalığı)
+      // 3. Measured drill answers only; legacy reviews without counters have no rate.
       if (allNodes.length === 0) {
         setRetentionHealth(null);
         setHealthSubtitle('Repertuvar Boş');
       } else {
-        const nodesWithSrs = allNodes.filter(n => n.srs && n.srs.reviewsCount > 0);
-        if (nodesWithSrs.length === 0) {
-          setRetentionHealth(100);
-          setHealthSubtitle('Yeni • Drill Bekliyor');
-        } else {
-          const nowTs = Date.now();
-          let totalScore = 0;
-          let masteredCount = 0;
-          let dueCount = 0;
-
-          for (const n of allNodes) {
-            if (!n.srs || n.srs.reviewsCount === 0) {
-              totalScore += 80;
-              continue;
-            }
-
-            let nodeScore = 60;
-            if (n.srs.streak >= 5) {
-              nodeScore = 100;
-              masteredCount++;
-            } else if (n.srs.streak >= 2) {
-              nodeScore = 85;
-            } else if (n.srs.streak >= 1) {
-              nodeScore = 70;
-            } else {
-              nodeScore = 40;
-            }
-
-            if (n.srs.dueDate && n.srs.dueDate < nowTs) {
-              dueCount++;
-              const overdueDays = (nowTs - n.srs.dueDate) / (1000 * 3600 * 24);
-              const decay = Math.min(25, Math.floor(overdueDays * 5));
-              nodeScore = Math.max(20, nodeScore - decay);
-            }
-
-            totalScore += nodeScore;
-          }
-
-          const avgHealth = Math.round(totalScore / allNodes.length);
-          setRetentionHealth(avgHealth);
-          setHealthSubtitle(
-            dueCount > 0 
-              ? `${dueCount} hamle tekrar bekliyor` 
-              : `${masteredCount} usta • Hafıza taze`
-          );
-        }
+        const correct = allNodes.reduce((total, node) => total + (node.srs?.correctAnswers || 0), 0);
+        const wrong = allNodes.reduce((total, node) => total + (node.srs?.wrongAnswers || 0), 0);
+        const answers = correct + wrong;
+        setRetentionHealth(answers > 0 ? Math.round(correct / answers * 100) : null);
+        setHealthSubtitle(answers > 0 ? `${answers} ölçülmüş yanıt` : 'Henüz ölçülmedi');
       }
 
       // 4. Real Repertoire Compliance (Maçlarda Repertuvar Uyumu)
@@ -324,7 +275,7 @@ export const HubView: React.FC<HubViewProps> = ({
             <div className="flex items-start gap-2">
               <Flame className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-zinc-100">Günlük Seri:</strong> Her gün düzenli olarak açılış tekrarı (Drill) veya maç analizi yaparak koruduğun aktif gün sayısıdır.
+                <strong className="text-zinc-100">Günlük Seri:</strong> Açılış tekrarı (Drill) yaptığın ardışık gün sayısıdır. İçe aktarılan maç tarihleri sayılmaz.
               </div>
             </div>
 
@@ -338,7 +289,7 @@ export const HubView: React.FC<HubViewProps> = ({
             <div className="flex items-start gap-2">
               <Brain className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-zinc-100">Hatırlama Sağlığı:</strong> Aralıklı Tekrar (SRS) algoritmasına göre varyantları unutma riskine karşı genel ezber tazeliği ve ustalık yüzden.
+                <strong className="text-zinc-100">Drill Doğruluğu:</strong> Kaydedilmiş doğru yanıtların tüm ölçülmüş drill yanıtlarına oranıdır. Eski, yanıt sayacı olmayan tekrarlar yüzdeye katılmaz.
               </div>
             </div>
 
@@ -420,11 +371,11 @@ export const HubView: React.FC<HubViewProps> = ({
             </div>
           </div>
 
-          {/* Card 3: Hatırlama Sağlığı */}
+          {/* Card 3: Drill Doğruluğu */}
           <div className="p-3.5 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 flex flex-col justify-between">
             <div>
               <div className="text-[11px] text-zinc-400 font-medium uppercase tracking-wider mb-1">
-                Hatırlama Sağlığı
+                Drill Doğruluğu
               </div>
               <div className="text-2xl font-mono font-bold text-emerald-400">
                 {retentionHealth !== null ? `%${retentionHealth}` : '—'}
