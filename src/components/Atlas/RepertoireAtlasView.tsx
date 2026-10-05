@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type { Repertoire, RepertoireNode, RepertoireColor } from '../../types/chess';
 import { 
   extractRepertoireLines, 
@@ -74,7 +74,13 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
   onDeleteRepertoire,
   onRefreshRepertoire,
 }) => {
-  const [viewMode, setViewMode] = useState<'visual' | 'hierarchical' | 'lines'>('visual');
+  const [viewModeOverride, setViewModeOverride] = useState<'visual' | 'hierarchical' | 'lines' | null>(null);
+  const [isSmallScreen, setIsSmallScreen] = useState(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(max-width: 639px)').matches
+      : false,
+  );
+  const viewMode = viewModeOverride ?? (isSmallScreen ? 'hierarchical' : 'visual');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [collapsedNodeIds, setCollapsedNodeIds] = useState<Set<string>>(new Set());
   const [zoomScale, setZoomScale] = useState<number>(1);
@@ -84,6 +90,15 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const mediaQuery = window.matchMedia('(max-width: 639px)');
+    const updateScreenSize = () => setIsSmallScreen(mediaQuery.matches);
+    updateScreenSize();
+    mediaQuery.addEventListener('change', updateScreenSize);
+    return () => mediaQuery.removeEventListener('change', updateScreenSize);
+  }, []);
 
   // Active Repertoire
   const currentRep = repertoires.find(r => r.id === activeRepertoireId) || repertoires[0];
@@ -541,7 +556,7 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex items-center bg-zinc-900 p-1 rounded-2xl border border-zinc-800 self-start sm:self-auto flex-wrap gap-1">
           <button
-            onClick={() => setViewMode('visual')}
+            onClick={() => setViewModeOverride('visual')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               viewMode === 'visual' ? 'bg-zinc-800 text-amber-400 border border-zinc-700 shadow-xs' : 'text-zinc-500 hover:text-zinc-300'
             }`}
@@ -551,7 +566,7 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
           </button>
 
           <button
-            onClick={() => setViewMode('hierarchical')}
+            onClick={() => setViewModeOverride('hierarchical')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               viewMode === 'hierarchical' ? 'bg-zinc-800 text-amber-400 border border-zinc-700 shadow-xs' : 'text-zinc-500 hover:text-zinc-300'
             }`}
@@ -561,7 +576,7 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
           </button>
 
           <button
-            onClick={() => setViewMode('lines')}
+            onClick={() => setViewModeOverride('lines')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               viewMode === 'lines' ? 'bg-zinc-800 text-amber-400 border border-zinc-700 shadow-xs' : 'text-zinc-500 hover:text-zinc-300'
             }`}
