@@ -359,7 +359,13 @@ export function App() {
 
       {/* First-Time Interactive Tour Walkthrough */}
       {isTourOpen && (
-        <FirstTimeTourModal onComplete={() => setIsTourOpen(false)} />
+        <FirstTimeTourModal
+          onComplete={() => {
+            setIsTourOpen(false);
+            handleTabChange('repertoire');
+          }}
+          onSkip={() => setIsTourOpen(false)}
+        />
       )}
 
       {/* Promotion Modal */}

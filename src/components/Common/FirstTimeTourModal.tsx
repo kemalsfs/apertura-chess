@@ -16,9 +16,10 @@ export const FIRST_TIME_TOUR_KEY = 'apertura_tour_seen_v2';
 
 interface FirstTimeTourModalProps {
   onComplete: () => void;
+  onSkip: () => void;
 }
 
-export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComplete }) => {
+export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComplete, onSkip }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [tokenInput, setTokenInput] = useState(() => getLichessToken() ?? '');
   const [isTokenSaved, setIsTokenSaved] = useState(false);
@@ -31,13 +32,14 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
     }
   };
 
-  const handleFinish = () => {
+  const handleFinish = (destination: 'board' | 'current') => {
     localStorage.setItem(FIRST_TIME_TOUR_KEY, 'true');
-    onComplete();
+    if (destination === 'board') onComplete();
+    else onSkip();
   };
 
   const totalSteps = 4;
-  const dialogRef = useModalFocus(true, handleFinish);
+  const dialogRef = useModalFocus(true, () => handleFinish('current'));
 
   return (
     <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in overflow-x-hidden" role="dialog" aria-modal="true" aria-label="Apertura tanıtım turu">
@@ -64,7 +66,7 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
           </div>
 
           <button
-            onClick={handleFinish}
+            onClick={() => handleFinish('current')}
             className="text-xs text-zinc-400 hover:text-zinc-200 transition cursor-pointer px-2 py-1"
           >
             Turu Geç
@@ -89,13 +91,13 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
                 </p>
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
-                Açılış hamlelerini keşfedin, repertuvarınıza kaydedin ve Lichess istatistikleriyle motor değerlendirmelerini birlikte inceleyin.
+                Turu bitirince Satranç Masası açılır. İlk varyantınızı tahtada oynayıp kaydedin; ardından Drill sekmesinde çalışın.
               </p>
               <div className="p-3 rounded-2xl bg-zinc-950/60 border border-zinc-800 text-[11px] text-zinc-400 space-y-1">
-                <div className="font-semibold text-zinc-200">✨ Bu kısa turda neler keşfedeceksiniz:</div>
-                <div>• Duality hamle karşılaştırması</div>
-                <div>• Lichess açılış verileri ve mevcutsa bulut değerlendirmesi</div>
-                <div>• Aralıklı tekrar (SRS) ile varyant çalışması</div>
+                <div className="font-semibold text-zinc-200">İlk çalışma yolu:</div>
+                <div>1. Tahtada kısa bir açılış varyantı oynayın.</div>
+                <div>2. “Repertuvara Kaydet” düğmesine basın.</div>
+                <div>3. Drill sekmesinde varyantı tekrar edin.</div>
               </div>
             </div>
           )}
@@ -136,7 +138,7 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
               </div>
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-zinc-100">
-                  🔑 Canlı Açılış Verileri için Lichess Token'ı
+                  🔑 İsteğe Bağlı: Lichess Token'ı
                 </h3>
                 <p className="text-xs text-zinc-400">
                   Salt okunur (0-scope) token ile bağlanın
@@ -144,6 +146,9 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Canlı Lichess Opening Explorer verileri için salt okunur (0-scope) token gerekir. Token olmadan servis 401 hatası verebilir ve canlı açılış verileri gösterilemeyebilir. Bulut değerlendirmesi ayrı bir hizmettir; her konumda bulunmayabilir ve gerektiğinde yerel motor kullanılabilir.
+              </p>
+              <p className="text-xs font-medium text-amber-300">
+                Tahtada hamle oynama, repertuvara kaydetme ve Drill için token gerekmez; bu adımı geçebilirsiniz.
               </p>
 
               {/* 1-Click Token Action */}
@@ -196,14 +201,14 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
               </div>
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-zinc-100">
-                  ⚔️ Hazırsınız! Repertuvarınızı Fethedin
+                  İlk Varyantınızı Kaydedin
                 </h3>
                 <p className="text-xs text-zinc-400">
-                  Aralıklı Tekrar & Kumanda Hub
+                  Satranç Masası → Repertuvara Kaydet → Drill
                 </p>
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
-                Repertuvarınıza eklediğiniz varyantları <strong>Hızlı Drill</strong> modunda 3 kademeli ipucu ve çok turlu eleme sistemiyle test edin; <strong>Kumanda Hub</strong> üzerinden açılış hakimiyetinizi takip edin.
+                Satranç Masası'nda örneğin <strong>e4 → e5 → atınızı f3'e</strong> oynayın ve <strong>Repertuvara Kaydet</strong>'e basın. Sonra <strong>Drill</strong> sekmesinde bu varyantı çalışın. Lichess tokenı gerekmez.
               </p>
               <div className="p-3 rounded-2xl bg-zinc-950/60 border border-zinc-800 text-[11px] text-zinc-400 flex items-center gap-2">
                 <Award className="w-4 h-4 text-amber-400 shrink-0" />
@@ -239,11 +244,11 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
             </button>
           ) : (
             <button
-              onClick={handleFinish}
+              onClick={() => handleFinish('board')}
               className="flex items-center gap-1 px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded-xl shadow-md transition cursor-pointer"
             >
               <Check className="w-4 h-4" />
-              <span>Apertura'ya Başla</span>
+              <span>Satranç Masasına Git</span>
             </button>
           )}
         </div>
