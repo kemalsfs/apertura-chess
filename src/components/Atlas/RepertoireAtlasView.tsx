@@ -351,67 +351,64 @@ export const RepertoireAtlasView: React.FC<RepertoireAtlasViewProps> = ({
 
     return (
       <div key={node.id} className="flex flex-col">
-        <div 
-          style={{ paddingLeft: `${(depth - 1) * 28 + 12}px` }}
-          className={`py-2 pr-3 flex items-center justify-between border-b border-zinc-800/60 transition group cursor-pointer ${
+        <div
+          style={{ paddingLeft: `min(${(depth - 1) * 28 + 12}px, 72px)` }}
+          className={`py-2 pr-3 flex items-center justify-between border-b border-zinc-800/60 transition ${
             isSelected
               ? 'bg-amber-500/20 text-zinc-100 border-amber-500/50'
               : isAncestor
               ? 'bg-zinc-800/60 text-zinc-100'
               : 'hover:bg-zinc-800/40 text-zinc-300'
           }`}
-          onClick={() => setSelectedNodeId(node.id)}
         >
           <div className="flex items-center gap-2 min-w-0">
             {/* Collapse / Expand Toggle */}
             {childNodes.length > 0 ? (
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleCollapse(node.id);
-                }}
-                className="w-5 h-5 rounded flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/60 transition shrink-0 cursor-pointer"
+                type="button"
+                onClick={() => toggleCollapse(node.id)}
+                aria-label={`${label} devam yollarını ${isCollapsed ? 'aç' : 'kapat'}`}
+                aria-expanded={!isCollapsed}
+                className="min-w-11 min-h-11 rounded flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/60 focus-visible:outline-2 focus-visible:outline-amber-400 transition shrink-0 cursor-pointer"
               >
-                {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
             ) : (
-              <div className="w-5 h-5 flex items-center justify-center shrink-0">
+              <div className="min-w-11 min-h-11 flex items-center justify-center shrink-0" aria-hidden="true">
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
               </div>
             )}
 
-            {/* Turn Dot */}
-            <span className={`w-2 h-2 rounded-full shrink-0 ${isWhite ? 'bg-zinc-100' : 'bg-zinc-900 border border-zinc-500'}`} />
-
-            {/* Move Label */}
-            <span className="font-mono font-bold text-xs text-zinc-100 shrink-0">
-              {label}
-            </span>
-
-            {/* Opening / ECO Tag */}
-            {ecoEntry && (
-              <span className="text-[10px] px-1.5 py-0.2 bg-zinc-800 border border-zinc-700 text-amber-400 rounded truncate max-w-[160px]">
-                {ecoEntry.name}
-              </span>
-            )}
+            <button
+              type="button"
+              onClick={() => setSelectedNodeId(node.id)}
+              aria-pressed={isSelected}
+              className="min-h-11 min-w-0 flex items-center gap-2 rounded px-1 text-left focus-visible:outline-2 focus-visible:outline-amber-400"
+            >
+              <span aria-hidden="true" className={`w-2 h-2 rounded-full shrink-0 ${isWhite ? 'bg-zinc-100' : 'bg-zinc-900 border border-zinc-500'}`} />
+              <span className="font-mono font-bold text-xs text-zinc-100 shrink-0">{label}</span>
+              {ecoEntry && (
+                <span className="text-[10px] px-1.5 py-0.2 bg-zinc-800 border border-zinc-700 text-amber-400 rounded truncate max-w-[160px]">
+                  {ecoEntry.name}
+                </span>
+              )}
+            </button>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             {childNodes.length > 0 && (
-              <span className="text-[10px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800">
+              <span className="hidden sm:inline text-[10px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800">
                 {childNodes.length} Yanıt
               </span>
             )}
 
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenNodeOnBoard(node.id, currentRepId);
-              }}
-              className="opacity-0 group-hover:opacity-100 p-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
-              title="Bu konumu tahtada aç"
+              type="button"
+              onClick={() => onOpenNodeOnBoard(node.id, currentRepId)}
+              className="flex min-w-11 min-h-11 items-center justify-center bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+              aria-label={`${label} konumunu tahtada aç`}
             >
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-4 h-4" />
             </button>
           </div>
         </div>
