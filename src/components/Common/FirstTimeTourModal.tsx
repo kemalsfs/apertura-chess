@@ -10,6 +10,7 @@ import {
   Award
 } from 'lucide-react';
 import { getLichessToken, setLichessToken } from '../../services/lichessExplorer';
+import { useModalFocus } from '../../hooks/useModalFocus';
 
 export const FIRST_TIME_TOUR_KEY = 'apertura_tour_seen_v2';
 
@@ -36,9 +37,10 @@ export const FirstTimeTourModal: React.FC<FirstTimeTourModalProps> = ({ onComple
   };
 
   const totalSteps = 4;
+  const dialogRef = useModalFocus(true, handleFinish);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in overflow-x-hidden" role="dialog" aria-modal="true" aria-label="Apertura tanıtım turu">
+    <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in overflow-x-hidden" role="dialog" aria-modal="true" aria-label="Apertura tanıtım turu">
       <div className="bg-zinc-900 border border-amber-500/30 rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
         
         {/* Top Progress & Skip */}

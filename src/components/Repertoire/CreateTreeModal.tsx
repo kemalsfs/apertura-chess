@@ -1,6 +1,7 @@
-﻿import React, { useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { GitBranch, X, Plus } from 'lucide-react';
 import type { RepertoireColor } from '../../types/chess';
+import { useModalFocus } from '../../hooks/useModalFocus';
 
 interface CreateTreeModalProps {
   isOpen: boolean;
@@ -19,6 +20,9 @@ export const CreateTreeModal: React.FC<CreateTreeModalProps> = ({
   const [color, setColor] = useState<RepertoireColor>(defaultColor);
   const [description, setDescription] = useState('');
   const [makeDefault, setMakeDefault] = useState(false);
+  const titleId = useId();
+  const nameRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useModalFocus(isOpen, onClose, nameRef);
 
   if (!isOpen) return null;
 
@@ -34,7 +38,7 @@ export const CreateTreeModal: React.FC<CreateTreeModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-md font-sans">
-      <div className="bg-zinc-900 border border-zinc-700/80 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-5">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="bg-zinc-900 border border-zinc-700/80 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -42,13 +46,14 @@ export const CreateTreeModal: React.FC<CreateTreeModalProps> = ({
               <GitBranch className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-zinc-100">Yeni Açılış Ağacı Oluştur</h3>
+              <h3 id={titleId} className="text-base font-bold text-zinc-100">Yeni Açılış Ağacı Oluştur</h3>
               <p className="text-xs text-zinc-400">Repertuvar kütüphanene yeni bir dal ekle</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
+            aria-label="Pencereyi kapat"
             className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 rounded-xl transition cursor-pointer"
           >
             <X className="w-4 h-4" />
@@ -90,6 +95,7 @@ export const CreateTreeModal: React.FC<CreateTreeModalProps> = ({
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-zinc-300">Ağaç Adı</label>
             <input
+              ref={nameRef}
               type="text"
               required
               value={name}
