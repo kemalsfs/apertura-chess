@@ -7,58 +7,29 @@ interface MobileNavProps {
   onTabChange: (tab: ActiveTab) => void;
 }
 
-export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) => {
-  return (
-    <nav className="mobile-nav md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 px-1 pt-1.5 flex items-center justify-around">
-      <button
-        onClick={() => onTabChange('hub')}
-        className={`flex flex-col items-center gap-1 py-1 px-1.5 rounded-lg text-[9px] font-medium transition cursor-pointer ${
-          activeTab === 'hub' ? 'text-amber-400 font-bold' : 'text-zinc-500'
-        }`}
-      >
-        <Compass className="w-4 h-4" />
-        <span>Kumanda</span>
-      </button>
+const tabs = [
+  { id: 'hub', label: 'Bugün', Icon: Compass },
+  { id: 'repertoire', label: 'Tahta', Icon: Layers },
+  { id: 'tree', label: 'Ağaç', Icon: GitBranch },
+  { id: 'drill', label: 'Çalış', Icon: Dumbbell },
+  { id: 'analytics', label: 'Analiz', Icon: BarChart3 },
+] as const satisfies ReadonlyArray<{ id: ActiveTab; label: string; Icon: typeof Compass }>;
 
+export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onTabChange }) => (
+  <nav aria-label="Ana gezinme" className="mobile-nav md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 px-1 pt-1.5 flex items-center">
+    {tabs.map(({ id, label, Icon }) => (
       <button
-        onClick={() => onTabChange('repertoire')}
-        className={`flex flex-col items-center gap-1 py-1 px-1.5 rounded-lg text-[9px] font-medium transition cursor-pointer ${
-          activeTab === 'repertoire' ? 'text-amber-400 font-bold' : 'text-zinc-500'
+        key={id}
+        type="button"
+        onClick={() => onTabChange(id)}
+        aria-current={activeTab === id ? 'page' : undefined}
+        className={`min-w-0 min-h-12 flex-1 flex flex-col items-center justify-center gap-1 rounded-lg px-0.5 text-[11px] font-medium transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-amber-400 ${
+          activeTab === id ? 'text-amber-400 font-bold' : 'text-zinc-400 hover:text-zinc-100'
         }`}
       >
-        <Layers className="w-4 h-4" />
-        <span>Masası</span>
+        <Icon aria-hidden="true" className="w-5 h-5" />
+        <span className="truncate max-w-full">{label}</span>
       </button>
-
-      <button
-        onClick={() => onTabChange('tree')}
-        className={`flex flex-col items-center gap-1 py-1 px-1.5 rounded-lg text-[9px] font-medium transition cursor-pointer ${
-          activeTab === 'tree' ? 'text-amber-400 font-bold' : 'text-zinc-500'
-        }`}
-      >
-        <GitBranch className="w-4 h-4" />
-        <span>Ağaç</span>
-      </button>
-
-      <button
-        onClick={() => onTabChange('drill')}
-        className={`flex flex-col items-center gap-1 py-1 px-1.5 rounded-lg text-[9px] font-medium transition cursor-pointer ${
-          activeTab === 'drill' ? 'text-amber-400 font-bold' : 'text-zinc-500'
-        }`}
-      >
-        <Dumbbell className="w-4 h-4" />
-        <span>Drill</span>
-      </button>
-
-      <button
-        onClick={() => onTabChange('analytics')}
-        className={`flex flex-col items-center gap-1 py-1 px-1.5 rounded-lg text-[9px] font-medium transition cursor-pointer ${
-          activeTab === 'analytics' ? 'text-amber-400 font-bold' : 'text-zinc-500'
-        }`}
-      >
-        <BarChart3 className="w-4 h-4" />
-        <span>Analiz</span>
-      </button>
-    </nav>
-  );
-};
+    ))}
+  </nav>
+);
