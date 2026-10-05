@@ -7,6 +7,7 @@ Updated: 2026-10-05. Working branch: `codex/apertura-v3`.
 - The pre-v3 `main` state is commit `90657b6`; a verified full-history Git bundle and original icon backup are retained outside the repository.
 - Each implementation package was reviewed, committed separately, and pushed to `origin/codex/apertura-v3`.
 - The detailed implementation and test journal is maintained in the KemalOS Apertura v3 project note.
+- Latest GitHub backup on this branch: `b0da3da` (source and lockfile); the working tree was clean after push.
 
 ## Verified code and package
 
@@ -25,3 +26,5 @@ Updated: 2026-10-05. Working branch: `codex/apertura-v3`.
 - Two source lint warnings remain in the asynchronous game review effects. They were left in place to avoid changing the review state flow without dedicated UI coverage. The 1.51 MB ECO book still triggers a chunk warning; measured startup impact on a target Android device is unknown.
 - Release signing secrets were removed from tracked source, but an old Git commit contains them. Treat the upload key as potentially exposed and resolve its status before distributing a release package. The local keystore has been retained; no signing secrets are stored in this note.
 - No Android device or AVD was connected during this checkpoint. Android WebView behavior, OS-level PWA install, and migration from an actual previous web release remain unverified. Play Store closed testing is outside this checkpoint.
+- A clean `npm ci` after patching transitive `brace-expansion` from 5.0.9 to 5.0.12 passed; 45+5 tests, build, lint and offline shell test passed again. `npm audit --omit=dev` reports zero findings. Three moderate development-only audit findings remain through `@capacitor/cli` → `xcode` → `uuid@7.0.3`; npm's proposed forced fix downgrades the CLI outside the declared range, so it was not applied. The Android APK payload did not change after this lockfile-only update.
+- A separate review of the two game-analysis effect lint warnings found guards against stale callbacks and a keyed modal reset on game changes, but no focused React lifecycle coverage. The state flow was retained rather than changing it solely to silence warnings.
